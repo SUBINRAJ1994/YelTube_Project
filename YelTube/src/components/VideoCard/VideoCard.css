@@ -1,0 +1,38 @@
+.video-link{
+  text-decoration: none;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.video-card{
+  width: 100%;
+  cursor: pointer;
+}
+
+.thumbnail{
+  width: 100%;
+  
+  border-radius: 12px;
+}
+
+.video-info{
+  display: flex;
+  padding: 10px 0;
+  margin-top: 10px;
+}
+
+.video-info h4{
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.video-info p,
+.video-info span{
+  color: #000000;
+  font-size: 14px;
+}
+.channel-logo{
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}

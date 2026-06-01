@@ -1,0 +1,142 @@
+.shorts-page {
+	height: 100vh;
+	overflow-y: scroll;
+	scroll-snap-type: y mandatory;
+	background: rgb(235, 234, 234);
+}
+
+.short-card {
+	height: 450px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	scroll-snap-align: start;
+	position: relative;
+}
+
+/* VIDEO CONTAINER */
+.short-video-container {
+	position: relative;
+	width: 350px;
+	height: 85vh;
+}
+
+/* VIDEO */
+.short-video {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: 20px;
+	display: block;
+}
+
+/* RIGHT SIDE BUTTONS */
+.short-actions {
+	position: absolute;
+	right: 10px;
+	bottom: 55px;
+	display: flex;
+	flex-direction: column;
+	gap: 30px;
+	z-index: 999;
+}
+
+/* BUTTON GROUP */
+.action-btn-group {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+/* BUTTON */
+.action-btn {
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	border: none;
+	cursor: pointer;
+	font-size: 20px;
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+/* ACTIVE BUTTON */
+.action-btn.active {
+	background: red;
+	color: white;
+}
+
+/* COUNTER */
+.counter {
+	color: white;
+	margin-top: 5px;
+	font-size: 14px;
+	font-weight: bold;
+}
+
+/* INFO */
+.short-info {
+	margin-top: 10px;
+	text-align: center;
+}
+
+.short-info h3 {
+	color: black;
+}
+
+/* COMMENTS */
+.comments-section {
+	width: 350px;
+	background: white;
+	padding: 15px;
+	border-radius: 10px;
+	margin-top: 10px;
+}
+
+.comment-input-box {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+.comment-input-box input {
+	flex: 1;
+	padding: 10px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+}
+
+.comment-input-box button {
+	padding: 10px 15px;
+	border: none;
+	background: red;
+	color: white;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.comment-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 10px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #ddd;
+}
+
+.delete-comment-btn {
+	background: transparent;
+	border: none;
+	color: red;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+.no-comments {
+	text-align: center;
+	color: gray;
+}

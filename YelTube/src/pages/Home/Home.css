@@ -1,0 +1,96 @@
+.home{
+  margin-left: 230px;
+  transition: 0.3s;
+}
+
+.home.full{
+  margin-left: 0px;
+  
+}
+
+.video-grid{
+  display: grid;
+
+  grid-template-columns:
+  repeat(
+    auto-fill,
+    minmax(250px,1fr)
+  );
+
+  gap: 20px;
+
+  padding: 20px;
+}
+.no-videos{
+  text-align: center;
+  margin-top: 100px;
+  color: gray;
+  font-size: 28px;
+}
+.video-card{
+  width: 100%;
+}
+
+.thumbnail{
+  width: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+.shorts-section{
+  grid-column: 1 / -1;
+  margin: 30px 0;
+}
+
+.shorts-row{
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+.short-card{
+  position: relative;
+  min-width: 220px;
+  height: 400px;
+  background: rgba(238,238,238);
+  border-radius: 16px;
+  overflow: hidden;
+  color: black;
+}
+
+.short-card video{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.short-info{
+  padding: 10px;
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  color: black;
+}
+
+.short-actions{
+  position: absolute;
+  right: 0px;
+  left: 180px;
+  bottom: 100px;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  flex-direction: column;
+  gap: 30px;
+  color: white;
+}
+
+.short-actions span{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 14px;
+
+}
