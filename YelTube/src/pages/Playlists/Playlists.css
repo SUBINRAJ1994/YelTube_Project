@@ -1,0 +1,27 @@
+.playlists-page{
+  padding-left:230px;
+  padding-top:20px;
+}
+
+.playlist-create{
+  display:flex;
+  gap:10px;
+  margin:20px 0;
+}
+
+.playlist-create input{
+  padding:10px;
+  width:250px;
+}
+
+.playlist-create button{
+  padding:10px 20px;
+  cursor:pointer;
+}
+
+.playlist-card{
+  background:#f2f2f2;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}

@@ -6,27 +6,26 @@ import {
 	FaThumbsUp,
 	FaThumbsDown,
 	FaComment,
-	FaTrash
+	FaTrash,
+	FaClock
 } from "react-icons/fa";
 
 const Shorts = () => {
 
 	// INITIAL STATE
-	const [shortsState, setShortsState] = useState(
-		shortsData.map((video) => ({
+	const [shortsState, setShortsState] = useState(()=>{
+		const saved=localStorage.getItem("shortsData");
+		return saved ? JSON.parse(saved) : shortsData.map((video)=>({
 			...video,
-			likes: video.likes || 0,
+			likes: video.like || 0,
 			dislikes: 0,
 			liked: false,
 			disliked: false,
-
-			// COMMENT ARRAY
-			commentsList: [],
-
+			commentList: [],
 			showComments: false,
 			commentInput: ""
-		}))
-	);
+		}));
+	});
 
 
 	const handleLike = (id) => {
@@ -153,6 +152,32 @@ const Shorts = () => {
 			})
 		);
 	};
+	const handleWatchLater = (short) => {
+
+  let watchLater =
+    JSON.parse(
+      localStorage.getItem("watchLater")
+    ) || [];
+
+  const alreadyExists =
+    watchLater.some(
+      item => item.id === short.id
+    );
+
+  if (alreadyExists) {
+    alert("Already added");
+    return;
+  }
+
+  watchLater.unshift(short);
+
+  localStorage.setItem(
+    "watchLater",
+    JSON.stringify(watchLater)
+  );
+
+  alert("Added to Watch Later");
+};
 
 	// =========================
 	// SHOW COMMENTS
@@ -404,6 +429,15 @@ const Shorts = () => {
 									{short.commentsList.length}
 								</p>
 
+							</div>
+							{/* WATCH LATER */}
+							<div className="action-btn-group">
+								<button
+									className="action-btn"
+									onClick={() => handleWatchLater(short)}	
+								>
+									<FaClock />
+								</button>
 							</div>
 
 						</div>

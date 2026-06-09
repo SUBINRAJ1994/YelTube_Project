@@ -15,6 +15,9 @@ import WatchLater from "./pages/WatchLater/WatchLater";
 import LikedVideos from "./pages/LikedVideos/LikedVideos";
 import Profile from "./pages/Profile/Profile";
 import Short from "./pages/Shorts/Shorts";
+import WatchHistory from "./pages/WatchHistory/WatchHistory";
+import Playlists from "./pages/Playlists/Playlists";
+import Subscriptions from "./pages/Subscriptions/Subscriptions";
 
 const App = () => {
   const [sidebar, setSidebar] = useState(true);
@@ -40,7 +43,7 @@ const App = () => {
         <Route path="/shorts" element={<Shorts />} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
         <Route path="/login" element={<Login />} />
-        <Route path="/channel/:id" element={<Channel />} />
+        <Route path="/channel" element={<Channel />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/history" element={<History />} />
@@ -48,6 +51,9 @@ const App = () => {
         <Route path="/likedvideos" element={<LikedVideos />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/short" element={<Short />} />
+        <Route path="/watchhistory" element={<WatchHistory />} />
+        <Route path="/playlists" element={<Playlists />} />
+        <Route path="/subscriptions" element={<Subscriptions />} />
       </Routes>
     </Router>
   );

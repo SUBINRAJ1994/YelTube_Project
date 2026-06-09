@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import videos from "../../data/videos";
 import "./Watch.css";
-import { FaThumbsUp, FaThumbsDown, FaShare, FaClock } from "react-icons/fa";
+import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList } from "react-icons/fa";
 import { useEffect, useState } from "react";
 
 
@@ -11,6 +11,15 @@ const Watch = () => {
   const [dislikes, setDislikes] = useState(0);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
+  const [playlists] = useState(
+  JSON.parse(
+    localStorage.getItem("playlists")
+  ) || []
+);
+
+const [selectedPlaylist,
+setSelectedPlaylist] =
+useState("");
 
 const handleLike = () => {
 
@@ -176,13 +185,70 @@ const handleWatchLater = () => {
   let watchLater = JSON.parse(localStorage.getItem("watchLater")) || [];
   const alreadyExists = watchLater.some((item) => item.id === video.id);
   if (alreadyExists){
-    alert("Alredy added to Watch Later");
+    alert("Already added to Watch Later");
     return;
   }
   watchLater.unshift(video);
   localStorage.setItem("watchLater", JSON.stringify(watchLater));
   alert("Added to Watch Later");
 }
+const addToPlaylist = () => {
+
+  if (!selectedPlaylist) {
+
+    alert("Select a Playlist");
+
+    return;
+
+  }
+
+  let allPlaylists =
+    JSON.parse(
+      localStorage.getItem(
+        "playlists"
+      )
+    ) || [];
+
+  allPlaylists =
+    allPlaylists.map(
+      (playlist) => {
+
+        if (
+          playlist.id ===
+          Number(selectedPlaylist)
+        ) {
+
+          const exists =
+            playlist.videos.some(
+              (item) =>
+                item.id === video.id
+            );
+
+          if (!exists) {
+            playlist.videos.push(video);
+          } else {
+            alert("Video already in playlist");
+          }
+
+        }
+
+        return playlist;
+
+      }
+    );
+
+  localStorage.setItem(
+    "playlists",
+    JSON.stringify(
+      allPlaylists
+    )
+  );
+
+  alert(
+    "Added to Playlist"
+  );
+
+};
   return (
     <div className="watch-page">
       <div className="watch-container">
@@ -241,7 +307,44 @@ const handleWatchLater = () => {
             <FaShare /> Share
           </button>
           <button onClick={handleWatchLater}><FaClock />Watch Later</button>
+          <button onClick={addToPlaylist}>
+            <FaList /> Add To Playlist
+          </button>
         </div>
+        <div className="playlist-section">
+
+  <select
+    value={selectedPlaylist}
+    onChange={(e) =>
+      setSelectedPlaylist(
+        e.target.value
+      )
+    }
+  >
+
+    <option value="">
+      Select Playlist
+    </option>
+
+    {
+      playlists.map(
+        (playlist) => (
+
+        <option
+          key={playlist.id}
+          value={playlist.id}
+        >
+          {playlist.name}
+        </option>
+
+      ))
+    }
+
+  </select>
+
+  
+
+</div>
         <div className="comments">
           <h3>Comments</h3>
           <input 

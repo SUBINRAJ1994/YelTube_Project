@@ -93,10 +93,11 @@ const Sidebar = ({ sidebar }) => {
           <span>Disliked Videos</span>
         </li>
 
+        <Link to="/subscriptions">
         <li>
           <FaUserFriends className="sidebar-icon" />
           <span>Subscriptions</span>
-        </li>
+        </li></Link>
 
         <li>
           <FaGamepad className="sidebar-icon" />
