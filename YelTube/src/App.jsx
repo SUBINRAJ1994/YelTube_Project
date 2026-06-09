@@ -40,8 +40,8 @@ const App = () => {
   );
 
   useEffect(() => {
-    document.body.className = theme;
-  }, [theme]);
+    document.body.className = `${theme} ${sidebar ? "" : "sidebar-collapsed"}`;
+  }, [theme, sidebar]);
 
   useEffect(() => {
     const handleResize = () => {

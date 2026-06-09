@@ -7,6 +7,7 @@ import {
   FaPaperPlane,
   FaCircle,
   FaThumbsUp,
+  FaThumbsDown,
   FaUserCircle,
   FaGem,
   FaShieldAlt,
@@ -70,6 +71,9 @@ const LiveStream = () => {
   const [liked, setLiked] = useState(() =>
     JSON.parse(localStorage.getItem("liveLiked")) || false
   );
+  const [disliked, setDisliked] = useState(() =>
+    JSON.parse(localStorage.getItem("liveDisliked")) || false
+  );
   const [likeCount, setLikeCount] = useState(STREAMER.likes);
 
   // ── Persistent: subscribed state ──
@@ -111,6 +115,11 @@ const LiveStream = () => {
   useEffect(() => {
     localStorage.setItem("liveLiked", JSON.stringify(liked));
   }, [liked]);
+
+  // ── Persist disliked ──
+  useEffect(() => {
+    localStorage.setItem("liveDisliked", JSON.stringify(disliked));
+  }, [disliked]);
 
   // ── Persist subscribed ──
   useEffect(() => {
@@ -202,8 +211,26 @@ const LiveStream = () => {
   };
 
   const handleLike = () => {
-    setLiked((prev) => !prev);
-    setLikeCount((c) => (liked ? c - 1 : c + 1));
+    if (liked) {
+      setLiked(false);
+      setLikeCount((c) => c - 1);
+    } else {
+      setLiked(true);
+      setLikeCount((c) => c + 1);
+      if (disliked) setDisliked(false);
+    }
+  };
+
+  const handleDislike = () => {
+    if (disliked) {
+      setDisliked(false);
+    } else {
+      setDisliked(true);
+      if (liked) {
+        setLiked(false);
+        setLikeCount((c) => c - 1);
+      }
+    }
   };
 
   const handleSubscribe = () => {
@@ -272,13 +299,21 @@ const LiveStream = () => {
                 <button
                   className={`action-btn like-btn ${liked ? "liked" : ""}`}
                   onClick={handleLike}
+                  title="Like"
                 >
                   <FaThumbsUp /> {likeCount.toLocaleString()}
                 </button>
-                <button className="action-btn" onClick={handleShare}>
+                <button
+                  className={`action-btn dislike-btn ${disliked ? "disliked" : ""}`}
+                  onClick={handleDislike}
+                  title="Dislike"
+                >
+                  <FaThumbsDown /> Dislike
+                </button>
+                <button className="action-btn" onClick={handleShare} title="Share">
                   <FaShare /> Share
                 </button>
-                <button className="action-btn super-chat-btn" onClick={handleSuperChat}>
+                <button className="action-btn super-chat-btn" onClick={handleSuperChat} title="Super Chat">
                   <FaGem /> Super Chat
                 </button>
               </div>

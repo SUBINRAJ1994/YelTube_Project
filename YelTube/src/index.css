@@ -68,3 +68,90 @@ button{
 input{
   font-family: inherit;
 }
+
+/* ===== Sidebar Collapse Layout Adaptation ===== */
+body.sidebar-collapsed .watch-page,
+body.sidebar-collapsed .upload-page,
+body.sidebar-collapsed .subscriptions-page,
+body.sidebar-collapsed .shorts-page,
+body.sidebar-collapsed .profile-page,
+body.sidebar-collapsed .playlists-details-page,
+body.sidebar-collapsed .playlists-page,
+body.sidebar-collapsed .livestream-page,
+body.sidebar-collapsed .community-page,
+body.sidebar-collapsed .history-page,
+body.sidebar-collapsed .watchlater-page,
+body.sidebar-collapsed .watchhistory-page,
+body.sidebar-collapsed .admin-page,
+body.sidebar-collapsed .studio-page,
+body.sidebar-collapsed .settings-page,
+body.sidebar-collapsed .trending-page,
+body.sidebar-collapsed .explore-page,
+body.sidebar-collapsed .channel-page,
+body.sidebar-collapsed .trending,
+body.sidebar-collapsed .explore,
+body.sidebar-collapsed .channel,
+body.sidebar-collapsed .notifications-page,
+body.sidebar-collapsed .watch-container {
+  margin-left: 0px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+/* Add smooth transitions to all main page containers for expansion/collapse */
+.watch-page,
+.upload-page,
+.subscriptions-page,
+.shorts-page,
+.profile-page,
+.playlists-details-page,
+.playlists-page,
+.livestream-page,
+.community-page,
+.history-page,
+.watchlater-page,
+.watchhistory-page,
+.admin-page,
+.studio-page,
+.settings-page,
+.trending-page,
+.explore-page,
+.channel-page,
+.trending,
+.explore,
+.channel,
+.notifications-page,
+.watch-container {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@media (max-width: 1024px) {
+  /* On tablets and mobile, ignore the sidebar offset entirely */
+  .watch-page,
+  .upload-page,
+  .subscriptions-page,
+  .shorts-page,
+  .profile-page,
+  .playlists-details-page,
+  .playlists-page,
+  .livestream-page,
+  .community-page,
+  .history-page,
+  .watchlater-page,
+  .watchhistory-page,
+  .admin-page,
+  .studio-page,
+  .settings-page,
+  .trending-page,
+  .explore-page,
+  .channel-page,
+  .trending,
+  .explore,
+  .channel,
+  .notifications-page,
+  .watch-container {
+    margin-left: 0px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}

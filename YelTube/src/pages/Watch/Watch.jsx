@@ -1,13 +1,21 @@
 import { useParams, Link } from "react-router-dom";
 import videos from "../../data/videos";
 import "./Watch.css";
-import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList, FaEdit, FaTrash, FaReply, FaFlag } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList, FaEdit, FaTrash, FaReply, FaFlag, FaCog } from "react-icons/fa";
+import { useEffect, useState, useRef } from "react";
 import ShareModal from "../../components/ShareModal/ShareModal";
 
 
 
 const Watch = () => {
+  const { id } = useParams();
+  const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+  const allVideos = [...uploadedVideos, ...videos];
+  const video = allVideos.find((v) => v.id === parseInt(id, 10));
+  const relatedVideos = allVideos.filter(
+    (item) => video && item.id !== video.id
+  );
+
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
   const [liked, setLiked] = useState(false);
@@ -21,6 +29,113 @@ const Watch = () => {
 const [selectedPlaylist,
 setSelectedPlaylist] =
 useState("");
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const videoRef = useRef(null);
+  const playerContainerRef = useRef(null);
+
+  const [ccActive, setCcActive] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [resolution, setResolution] = useState("1080p");
+
+  const handleSpeedChange = (speed) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+    setShowSettingsMenu(false);
+  };
+
+  const handleResolutionChange = (res) => {
+    setResolution(res);
+    alert(`Video quality switched to ${res}`);
+    setShowSettingsMenu(false);
+  };
+
+  const getSubtitles = (time) => {
+    if (time < 3) return "Welcome to the YelTube developer session!";
+    if (time >= 3 && time < 8) return "Here we are demonstrating custom playback controls.";
+    if (time >= 8 && time < 14) return "You can toggle closed captions and change video resolution.";
+    if (time >= 14 && time < 20) return "Select playback speeds or quality from the settings cog.";
+    return "Enjoy watching this video in premium player quality!";
+  };
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTimeUpdate = (e) => {
+    setCurrentTime(e.target.currentTime);
+    localStorage.setItem(`progress_${video.id}`, e.target.currentTime);
+  };
+
+  const handleLoadedMetadata = (e) => {
+    setDuration(e.target.duration);
+    const progress = localStorage.getItem(`progress_${video.id}`);
+    if (progress) {
+      e.target.currentTime = parseFloat(progress);
+      setCurrentTime(parseFloat(progress));
+    }
+  };
+
+  const handleSeek = (e) => {
+    const time = parseFloat(e.target.value);
+    videoRef.current.currentTime = time;
+    setCurrentTime(time);
+  };
+
+  const handleVolumeChange = (e) => {
+    const vol = parseFloat(e.target.value);
+    setVolume(vol);
+    videoRef.current.volume = vol;
+    setIsMuted(vol === 0);
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    if (isMuted) {
+      videoRef.current.volume = volume;
+      setIsMuted(false);
+    } else {
+      videoRef.current.volume = 0;
+      setIsMuted(true);
+    }
+  };
+
+  const skip = (amount) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + amount));
+  };
+
+  const toggleFullscreen = () => {
+    if (!playerContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      playerContainerRef.current.requestFullscreen().catch(err => {
+        console.error("Fullscreen error:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const formatTime = (timeInSeconds) => {
+    if (isNaN(timeInSeconds)) return "00:00";
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
 
 const handleLike = () => {
 
@@ -123,7 +238,6 @@ const handleDislike = () => {
   }
 
 };
-  const { id } = useParams();
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
 
@@ -311,10 +425,6 @@ const handleDislike = () => {
     alert("Thank you. This comment has been flagged for administrator review.");
   };
 
-  const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-  const allVideos = [...uploadedVideos, ...videos];
-  const video = allVideos.find((v) => v.id === parseInt(id, 10));
-
   useEffect(() => {
     if (!video) return;
 
@@ -395,10 +505,6 @@ const handleDislike = () => {
       }
     };
   }, [video]);
-
-  const relatedVideos = allVideos.filter(
-    (item) => video && item.id !== video.id
-  );
 
   if (!video) {
     return (
@@ -518,22 +624,122 @@ const handleSubscribe = () => {
     <div className="watch-page">
       <div className="watch-container">
         {video.videoUrl ? (
-          <video
-            width="100%"
-            height="400px"
-            src={video.videoUrl}
-            controls
-            style={{ borderRadius: "15px", backgroundColor: "black" }}
-            onTimeUpdate={(e) => {
-              localStorage.setItem(`progress_${video.id}`, e.target.currentTime);
-            }}
-            onLoadedMetadata={(e) => {
-              const progress = localStorage.getItem(`progress_${video.id}`);
-              if (progress) {
-                e.target.currentTime = parseFloat(progress);
-              }
-            }}
-          />
+          <div className="custom-player-container" ref={playerContainerRef}>
+            <video
+              ref={videoRef}
+              width="100%"
+              src={video.videoUrl}
+              onClick={togglePlay}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              style={{ borderRadius: "15px", backgroundColor: "black", display: "block" }}
+            />
+            <div className="custom-player-controls">
+              <input
+                type="range"
+                className="custom-seek-bar"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                onChange={handleSeek}
+              />
+              <div className="controls-row">
+                <div className="controls-left">
+                  <button className="control-btn" onClick={togglePlay} title={isPlaying ? "Pause" : "Play"}>
+                    {isPlaying ? "⏸" : "▶"}
+                  </button>
+                  <button className="control-btn" onClick={() => skip(-10)} title="Rewind 10s">
+                    ⏪ 10s
+                  </button>
+                  <button className="control-btn" onClick={() => skip(10)} title="Fast Forward 10s">
+                    ⏩ 10s
+                  </button>
+                  <span className="control-time">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
+                </div>
+                <div className="controls-right">
+                  <button
+                    className={`control-btn cc-btn ${ccActive ? "active" : ""}`}
+                    onClick={() => setCcActive(!ccActive)}
+                    title="Closed Captions"
+                    style={{ fontWeight: "bold", fontSize: "10px", border: "1.5px solid", borderRadius: "4px", padding: "1px 4px", height: "18px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  >
+                    CC
+                  </button>
+                  <button
+                    className={`control-btn settings-btn ${showSettingsMenu ? "active" : ""}`}
+                    onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                    title="Settings"
+                  >
+                    <FaCog />
+                  </button>
+                  <button className="control-btn" onClick={toggleMute} title={isMuted ? "Unmute" : "Mute"}>
+                    {isMuted || volume === 0 ? "🔇" : "🔊"}
+                  </button>
+                  <input
+                    type="range"
+                    className="custom-volume-bar"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                  />
+                  <button className="control-btn" onClick={toggleFullscreen} title="Toggle Fullscreen">
+                    ⛶
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Subtitle Overlay */}
+            {ccActive && (
+              <div className="video-subtitle-overlay">
+                {getSubtitles(currentTime)}
+              </div>
+            )}
+
+            {/* Settings Dropdown Popover */}
+            {showSettingsMenu && (
+              <div className="video-settings-menu">
+                <div className="settings-menu-item">
+                  <span>Speed</span>
+                  <select
+                    value={playbackSpeed}
+                    onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
+                  >
+                    <option value="0.5">0.5x</option>
+                    <option value="1">Normal</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                  </select>
+                </div>
+                <div className="settings-menu-item">
+                  <span>Quality</span>
+                  <select
+                    value={resolution}
+                    onChange={(e) => handleResolutionChange(e.target.value)}
+                  >
+                    <option value="1080p">1080p (HD)</option>
+                    <option value="720p">720p</option>
+                    <option value="480p">480p</option>
+                    <option value="Auto">Auto</option>
+                  </select>
+                </div>
+                <div className="settings-menu-item">
+                  <span>Subtitles/CC</span>
+                  <select
+                    value={ccActive ? "on" : "off"}
+                    onChange={(e) => setCcActive(e.target.value === "on")}
+                  >
+                    <option value="off">Off</option>
+                    <option value="on">On (English)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
         ) : (
           <iframe
             id="youtube-player-iframe"

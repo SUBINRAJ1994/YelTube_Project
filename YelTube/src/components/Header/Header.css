@@ -236,6 +236,9 @@ button {
   color: var(--text-color);
   cursor: pointer;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .profile-dropdown button:hover{

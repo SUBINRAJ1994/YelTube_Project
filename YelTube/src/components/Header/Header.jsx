@@ -9,8 +9,12 @@ import {
   FaSignInAlt,
   FaSun,
   FaMoon,
+  FaUser,
+  FaCog,
+  FaShieldAlt,
+  FaSignOutAlt,
 } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import staticVideos from "../../data/videos";
 
@@ -21,6 +25,7 @@ function Header({
   theme,
   setTheme
 }) {
+  const navigate = useNavigate();
 
   const currentUser = JSON.parse(
     localStorage.getItem("currentUser")
@@ -58,20 +63,27 @@ function Header({
     setSuggestions(filtered);
   }, [searchQuery]);
 
-  const handleKeyDown = (e) => {
-    if (suggestions.length === 0) return;
+  const triggerSearch = (query) => {
+    setSearchQuery(query);
+    setShowSuggestions(false);
+    navigate("/");
+  };
 
+  const handleKeyDown = (e) => {
     if (e.key === "ArrowDown") {
+      if (suggestions.length === 0) return;
       e.preventDefault();
       setHighlightedIndex((prev) => (prev + 1) % suggestions.length);
     } else if (e.key === "ArrowUp") {
+      if (suggestions.length === 0) return;
       e.preventDefault();
       setHighlightedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
     } else if (e.key === "Enter") {
+      e.preventDefault();
       if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
-        e.preventDefault();
-        setSearchQuery(suggestions[highlightedIndex]);
-        setShowSuggestions(false);
+        triggerSearch(suggestions[highlightedIndex]);
+      } else {
+        triggerSearch(searchQuery);
       }
     } else if (e.key === "Escape") {
       setShowSuggestions(false);
@@ -155,7 +167,7 @@ function Header({
               }}
               onKeyDown={handleKeyDown}
             />
-            <button className="search-btn" title="Search">
+            <button className="search-btn" title="Search" onClick={() => triggerSearch(searchQuery)}>
               <FaSearch />
             </button>
           </div>
@@ -166,8 +178,7 @@ function Header({
                   key={index}
                   className={`suggestion-item ${highlightedIndex === index ? "highlighted" : ""}`}
                   onMouseDown={() => {
-                    setSearchQuery(sug);
-                    setShowSuggestions(false);
+                    triggerSearch(sug);
                   }}
                   onMouseEnter={() => setHighlightedIndex(index)}
                 >
@@ -251,27 +262,31 @@ function Header({
             {
               showProfileMenu && (
                 <div className="profile-dropdown">
-                  <p className="profile-name">
-                    {currentUser.name}
+                  <p className="profile-name"><b>
+                    {currentUser.name}</b>
                   </p>
                   <Link to="/profile" className="dropdown-link" onClick={() => setShowProfileMenu(false)}>
                     <button>
-                    Profile
+                      <FaUser /> Profile
                     </button>
                   </Link>
                   <Link to="/channel" onClick={() => setShowProfileMenu(false)}>
-                  <button>{currentUser.name}'s Channel</button>
+                    <button>
+                      <FaVideo /> {currentUser.name}'s Channel
+                    </button>
                   </Link>
                   <Link to="/settings" onClick={() => setShowProfileMenu(false)}>
-                    <button>Settings</button>
+                    <button>
+                      <FaCog /> Settings
+                    </button>
                   </Link>
                   <Link to="/admin" onClick={() => setShowProfileMenu(false)}>
-                    <button>Admin Panel</button>
+                    <button>
+                      <FaShieldAlt /> Admin Panel
+                    </button>
                   </Link>
-                  <button
-                  onClick={handleLogout}
-                  >
-                  Logout
+                  <button onClick={handleLogout}>
+                    <FaSignOutAlt /> Logout
                   </button>
                 </div>
               )

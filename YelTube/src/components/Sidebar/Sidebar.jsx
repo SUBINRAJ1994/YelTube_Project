@@ -18,6 +18,8 @@ import {
   FaStar,
   FaShieldAlt,
   FaUsers,
+  FaPlusCircle,
+  FaTv,
 } from "react-icons/fa";
 
 import { Link } from "react-router-dom";
@@ -178,6 +180,26 @@ const Sidebar = ({ sidebar }) => {
 
                 </li>
 
+              </Link>
+
+              <Link
+                to="/upload?category=Shorts"
+                className="sidebar-link"
+              >
+                <li>
+                  <FaPlusCircle className="sidebar-icon" />
+                  <span>Create Short</span>
+                </li>
+              </Link>
+
+              <Link
+                to="/channel"
+                className="sidebar-link"
+              >
+                <li>
+                  <FaTv className="sidebar-icon" />
+                  <span>Create Channel</span>
+                </li>
               </Link>
 
               <Link to="/studio" className="sidebar-link">
