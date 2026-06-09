@@ -1,30 +1,110 @@
 import "./Header.css";
-
 import {
   FaBars,
   FaSearch,
   FaBell,
   FaMicrophone,
   FaPlus,
+  FaVideo,
+  FaSignInAlt,
+  FaSun,
+  FaMoon,
 } from "react-icons/fa";
-
 import { Link } from "react-router-dom";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import staticVideos from "../../data/videos";
 
 function Header({
   toggleSidebar,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  theme,
+  setTheme
 }) {
 
   const currentUser = JSON.parse(
     localStorage.getItem("currentUser")
   );
 
-  const [showProfileMenu,
-  setShowProfileMenu] =
-  useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  const POPULAR_SEARCHES = [
+    "React",
+    "React Tutorial",
+    "React Hooks",
+    "Subin Tech",
+    "Django REST",
+    "YouTube Clone",
+    "HTML CSS Tutorial",
+    "Vite JS"
+  ];
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const query = searchQuery.toLowerCase();
+    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+    const allTitles = [...uploaded, ...staticVideos].map((v) => v.title);
+    const combined = [...new Set([...POPULAR_SEARCHES, ...allTitles])];
+    const filtered = combined.filter((title) =>
+      title.toLowerCase().includes(query)
+    ).slice(0, 8);
+
+    setSuggestions(filtered);
+  }, [searchQuery]);
+
+  const handleKeyDown = (e) => {
+    if (suggestions.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1) % suggestions.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+    } else if (e.key === "Enter") {
+      if (highlightedIndex >= 0 && highlightedIndex < suggestions.length) {
+        e.preventDefault();
+        setSearchQuery(suggestions[highlightedIndex]);
+        setShowSuggestions(false);
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  };
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  useEffect(() => {
+    const loadedNotifications = JSON.parse(localStorage.getItem("notifications")) || [];
+    setNotifications(loadedNotifications);
+  }, [showNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
+    setShowProfileMenu(false);
+  };
+
+  const markAsRead = (id) => {
+    const updated = notifications.map((n) =>
+      n.id === id ? { ...n, read: true } : n
+    );
+    setNotifications(updated);
+    localStorage.setItem("notifications", JSON.stringify(updated));
+  };
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+  };
 
   const handleLogout = () => {
 
@@ -58,30 +138,61 @@ function Header({
       </div>
 
       <div className="header-center">
+        <div
+          className="search-box-container"
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 250)}
+        >
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+                setHighlightedIndex(-1);
+              }}
+              onKeyDown={handleKeyDown}
+            />
+            <button className="search-btn" title="Search">
+              <FaSearch />
+            </button>
+          </div>
+          {showSuggestions && suggestions.length > 0 && (
+            <ul className="search-suggestions-dropdown">
+              {suggestions.map((sug, index) => (
+                <li
+                  key={index}
+                  className={`suggestion-item ${highlightedIndex === index ? "highlighted" : ""}`}
+                  onMouseDown={() => {
+                    setSearchQuery(sug);
+                    setShowSuggestions(false);
+                  }}
+                  onMouseEnter={() => setHighlightedIndex(index)}
+                >
+                  <FaSearch className="suggestion-search-icon" />
+                  <span>{sug}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
-        <input
-          type="text"
-          placeholder="Search"
-          value={searchQuery}
-          onChange={(e) =>
-            setSearchQuery(
-              e.target.value
-            )
-          }
-        />
-
-        <button className="search-btn">
-          <FaSearch />
-        </button>
-
-        <button className="mic-btn">
+        <button className="mic-btn" title="Search with your voice">
           <FaMicrophone />
         </button>
-
       </div>
 
       <div className="header-right">
-
+        <button className="theme-toggle-btn" onClick={toggleTheme} title={`Switch to ${theme === "light" ? "dark" : "light"} theme`}>
+          {theme === "light" ? <FaMoon /> : <FaSun />}
+        </button>
+            <Link to="/livestream">
+        <button className="live-btn" title="Go Live">
+          <FaVideo />
+        </button>
+        </Link> 
         <Link
           to={
             currentUser
@@ -89,11 +200,41 @@ function Header({
             : "/login"
           }
         >
-          <button className="upload-btn">
+          <button className="upload-btn" title="Upload video">
             <FaPlus className="upload-icon" />
           </button>
         </Link>
-        <FaBell className="notification-icon" />
+        <div className="notification-icon-container">
+          <FaBell className="notification-icon" title="Notifications" onClick={toggleNotifications} />
+          {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
+          {showNotifications && (
+            <div className="notifications-dropdown">
+              <h4>Notifications</h4>
+              {notifications.length === 0 ? (
+                <p className="no-notifications">No notifications yet</p>
+              ) : (
+                <>
+                  {notifications.slice(0, 5).map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`notification-item ${notif.read ? "" : "unread"}`}
+                      onClick={() => markAsRead(notif.id)}
+                    >
+                      {notif.message}
+                    </div>
+                  ))}
+                  <Link
+                    to="/notifications"
+                    className="view-all-notifications"
+                    onClick={() => setShowNotifications(false)}
+                  >
+                    View all notifications
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         {currentUser ? (
           <div className="profile-section">
 
@@ -113,13 +254,19 @@ function Header({
                   <p className="profile-name">
                     {currentUser.name}
                   </p>
-                  <Link to="/profile" className="dropdown-link">
+                  <Link to="/profile" className="dropdown-link" onClick={() => setShowProfileMenu(false)}>
                     <button>
                     Profile
                     </button>
                   </Link>
-                  <Link to="/channel">
+                  <Link to="/channel" onClick={() => setShowProfileMenu(false)}>
                   <button>{currentUser.name}'s Channel</button>
+                  </Link>
+                  <Link to="/settings" onClick={() => setShowProfileMenu(false)}>
+                    <button>Settings</button>
+                  </Link>
+                  <Link to="/admin" onClick={() => setShowProfileMenu(false)}>
+                    <button>Admin Panel</button>
                   </Link>
                   <button
                   onClick={handleLogout}
@@ -132,21 +279,14 @@ function Header({
           </div>
         ) : (
           <div className="auth-buttons">
-
             <Link to="/login">
-              <button>
-                Login
+              <button title="Login" className="auth-btn">
+                <FaSignInAlt className="auth-icon" /> Login
               </button>
             </Link>
 
-            <Link to="/register">
-              <button>
-                Register
-              </button>
-            </Link>
 
           </div>
-
         )}
       </div>
     </header>

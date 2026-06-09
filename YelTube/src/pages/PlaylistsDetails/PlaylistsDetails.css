@@ -1,0 +1,232 @@
+.playlist-details-page {
+  padding-left: 230px;
+  padding-top: 20px;
+  padding-right: 20px;
+  color: white;
+  min-height: 100vh;
+  background-color: var(--bg-primary, #0f0f0f);
+}
+
+.playlist-details-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.playlist-details-header {
+  border-bottom: 1px solid var(--border-color, #2f2f2f);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.back-playlists-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary, #aaaaaa);
+  text-decoration: none;
+  font-size: 14px;
+  margin-bottom: 15px;
+  transition: color 0.2s;
+}
+
+.back-playlists-btn:hover {
+  color: #ff0000;
+}
+
+.playlist-title-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.playlist-title-action-row h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.playlist-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.pl-header-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--hover-bg, #272727);
+  border: 1px solid var(--border-color, #3f3f3f);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.pl-header-btn:hover {
+  background: #3f3f3f;
+}
+
+.pl-header-btn.delete:hover {
+  background: #ff0000;
+  border-color: #ff0000;
+}
+
+.playlist-subtitle {
+  color: var(--text-secondary, #aaaaaa);
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.playlist-videos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.playlist-video-row-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-secondary, #1f1f1f);
+  border: 1px solid var(--border-color, #2a2a2a);
+  border-radius: 12px;
+  padding: 10px 15px;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.playlist-video-row-wrapper:hover {
+  background: var(--hover-bg, #2a2a2a);
+  transform: translateY(-2px);
+}
+
+.playlist-reorder-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reorder-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.reorder-btn:hover:not(:disabled) {
+  color: #ff0000;
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.reorder-btn:disabled {
+  color: #444;
+  cursor: not-allowed;
+}
+
+.playlist-video-link {
+  flex: 1;
+  text-decoration: none;
+  color: white;
+}
+
+.playlist-video-card {
+  display: flex;
+  gap: 16px;
+}
+
+.playlist-video-card img {
+  width: 160px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.playlist-video-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.playlist-video-info h3 {
+  font-size: 16px;
+  margin: 0 0 6px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.playlist-video-info p {
+  font-size: 14px;
+  color: var(--text-secondary, #aaaaaa);
+  margin: 0 0 4px 0;
+}
+
+.playlist-video-info span {
+  font-size: 12px;
+  color: #888888;
+}
+
+.remove-video-pl-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #aaaaaa);
+  font-size: 16px;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.remove-video-pl-btn:hover {
+  color: #ff0000;
+  background: rgba(255, 0, 0, 0.1);
+}
+
+.empty-playlist-detail {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary, #aaaaaa);
+  background: var(--bg-secondary, #1f1f1f);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color, #333);
+}
+
+.empty-pl-icon {
+  font-size: 48px;
+  color: #ff0000;
+  margin-bottom: 16px;
+}
+
+.empty-playlist-detail h3 {
+  color: white;
+  margin-bottom: 8px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .playlist-details-page {
+    padding-left: 20px;
+  }
+  .playlist-title-action-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .playlist-video-card img {
+    width: 120px;
+    height: 70px;
+  }
+}

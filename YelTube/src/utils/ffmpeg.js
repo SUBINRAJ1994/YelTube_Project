@@ -1,5 +1,5 @@
-import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { createFFmpeg } from "@ffmpeg/ffmpeg";
 
-const ffmpeg = new FFmpeg();
+const ffmpeg = createFFmpeg();
 
 export default ffmpeg;

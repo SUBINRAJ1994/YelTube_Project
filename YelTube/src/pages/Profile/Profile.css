@@ -100,3 +100,27 @@
   flex-direction:column;
   gap:10px;
 }
+
+@media (max-width: 1024px) {
+  .profile-page {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-top: 80px;
+  }
+  .profile-banner {
+    height: 150px;
+  }
+  .profile-avatar {
+    width: 100px;
+    height: 100px;
+    margin-top: -50px;
+  }
+  .profile-stats {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .stat-card {
+    flex: 1;
+    min-width: 100px;
+  }
+}

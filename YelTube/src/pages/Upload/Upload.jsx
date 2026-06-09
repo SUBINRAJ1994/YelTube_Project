@@ -78,7 +78,60 @@ const Upload = () => {
 
         setUploading(false);
 
+        // Get current user
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        const channelName = currentUser ? currentUser.name : "Anonymous Channel";
+
+        // Create new video object
+        const newVideo = {
+          id: Date.now(),
+          title: title,
+          description: description,
+          category: category,
+          thumbnail: thumbnailPreview || "https://picsum.photos/300/200",
+          videoUrl: videoPreview,
+          channel: channelName,
+          channelLogo: "https://i.pravatar.cc/40",
+          views: "0 views",
+          time: "Just now",
+          duration: "3:00",
+          youtubeId: "dQw4w9WgXcQ" // Fallback YouTube video ID
+        };
+
+        // Save to uploadedVideos (for Home page grid)
+        const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+        uploadedVideos.unshift(newVideo);
+        localStorage.setItem("uploadedVideos", JSON.stringify(uploadedVideos));
+
+        // Save to myVideos (for user's Channel page)
+        const myVideos = JSON.parse(localStorage.getItem("myVideos")) || [];
+        myVideos.unshift(newVideo);
+        localStorage.setItem("myVideos", JSON.stringify(myVideos));
+
+        // Trigger notification if a user is subscribed to this channel
+        const subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
+        if (subscriptions.includes(channelName)) {
+          const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+          notifications.unshift({
+            id: Date.now(),
+            message: `${channelName} uploaded a new video: "${title}"`,
+            videoId: newVideo.id,
+            time: "Just now",
+            read: false
+          });
+          localStorage.setItem("notifications", JSON.stringify(notifications));
+        }
+
         alert("Upload Successful");
+
+        // Clear form fields
+        setTitle("");
+        setDescription("");
+        setCategory("");
+        setVideoFile(null);
+        setThumbnail(null);
+        setVideoPreview("");
+        setThumbnailPreview("");
 
         setTimeout(() => {
           setUploadProgress(0);

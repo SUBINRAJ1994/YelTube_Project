@@ -4,10 +4,47 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg-color: #f9f9f9;
+  --text-color: #0f0f0f;
+  --card-bg: #ffffff;
+  --hover-bg: #f2f2f2;
+  --border-color: #cccccc;
+  --header-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --dropdown-bg: #ffffff;
+  --input-bg: #ffffff;
+}
+
+body.dark {
+  --bg-color: #0f0f0f;
+  --text-color: #f1f1f1;
+  --card-bg: #0f0f0f;
+  --hover-bg: #272727;
+  --border-color: #3f3f3f;
+  --header-bg: #0f0f0f;
+  --sidebar-bg: #0f0f0f;
+  --dropdown-bg: #212121;
+  --input-bg: #121212;
+}
+
+body.light {
+  --bg-color: #f9f9f9;
+  --text-color: #0f0f0f;
+  --card-bg: #ffffff;
+  --hover-bg: #f2f2f2;
+  --border-color: #cccccc;
+  --header-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --dropdown-bg: #ffffff;
+  --input-bg: #ffffff;
+}
+
 body{
-  background-color: #fffdfd;
-  color: rgb(0, 0, 0);
+  background-color: var(--bg-color);
+  color: var(--text-color);
   font-family: Arial, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 a{

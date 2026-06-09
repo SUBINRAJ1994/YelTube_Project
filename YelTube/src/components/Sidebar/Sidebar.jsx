@@ -14,6 +14,10 @@ import {
   FaUpload,
   FaSignOutAlt,
   FaUserCircle,
+  FaCog,
+  FaStar,
+  FaShieldAlt,
+  FaUsers,
 } from "react-icons/fa";
 
 import { Link } from "react-router-dom";
@@ -59,20 +63,19 @@ const Sidebar = ({ sidebar }) => {
         </li>
         </Link>
 
+        <Link to="/trending" className="sidebar-link">
         <li>
           <FaFire className="sidebar-icon" />
           <span>Trending</span>
         </li>
+        </Link>
 
-        <li>
-          <FaMusic className="sidebar-icon" />
-          <span>Music</span>
-        </li>
-
+        <Link to="/explore" className="sidebar-link">
         <li>
           <FaVideo className="sidebar-icon" />
-          <span>Video</span>
+          <span>Explore</span>
         </li>
+        </Link>
 
         <Link to="/shorts" className="sidebar-link">
         <li>
@@ -93,11 +96,18 @@ const Sidebar = ({ sidebar }) => {
           <span>Disliked Videos</span>
         </li>
 
-        <Link to="/subscriptions">
+        <Link to="/subscriptions" className="sidebar-link">
         <li>
           <FaUserFriends className="sidebar-icon" />
           <span>Subscriptions</span>
         </li></Link>
+
+        <Link to="/community" className="sidebar-link">
+        <li>
+          <FaUsers className="sidebar-icon" />
+          <span>Community</span>
+        </li>
+        </Link>
 
         <li>
           <FaGamepad className="sidebar-icon" />
@@ -115,6 +125,20 @@ const Sidebar = ({ sidebar }) => {
         <li>
           <FaClock className="sidebar-icon" />
           <span>Watch Later</span>
+        </li>
+        </Link>
+
+        <Link to="/premium" className="sidebar-link">
+        <li>
+          <FaStar className="sidebar-icon" style={{ color: "#ff9800" }} />
+          <span>Premium</span>
+        </li>
+        </Link>
+
+        <Link to="/settings" className="sidebar-link">
+        <li>
+          <FaCog className="sidebar-icon" />
+          <span>Settings</span>
         </li>
         </Link>
 
@@ -154,6 +178,20 @@ const Sidebar = ({ sidebar }) => {
 
                 </li>
 
+              </Link>
+
+              <Link to="/studio" className="sidebar-link">
+                <li>
+                  <FaVideo className="sidebar-icon" />
+                  <span>Creator Studio</span>
+                </li>
+              </Link>
+
+              <Link to="/admin" className="sidebar-link">
+                <li>
+                  <FaShieldAlt className="sidebar-icon" />
+                  <span>Admin Panel</span>
+                </li>
               </Link>
 
               <li

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import VideoCard from "../../components/VideoCard/VideoCard";
 import videos from "../../data/videos";
 import shortsData from "../../data/shortsData";
@@ -16,9 +17,17 @@ const Home = ({
   selectedCategory,
   sidebar
 }) => {
+  const [allVideos, setAllVideos] = useState([]);
+
+  useEffect(() => {
+    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+    const blacklist = JSON.parse(localStorage.getItem("deletedVideoIds")) || [];
+    const combined = [...uploaded, ...videos].filter((v) => !blacklist.includes(v.id));
+    setAllVideos(combined);
+  }, []);
 
   const filteredVideos =
-  videos.filter((video) => {
+  allVideos.filter((video) => {
 
     const matchesSearch =
 

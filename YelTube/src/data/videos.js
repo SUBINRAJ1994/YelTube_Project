@@ -5,12 +5,14 @@ const videos = [
     channel: "Subin Tech",
     views: "1M views",
     time: "2 days ago",
+    
 
     thumbnail:
       "https://i.ytimg.com/vi/bMknfKXIFA8/maxresdefault.jpg",
 
     channelLogo:
       "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+
   },
 
   {

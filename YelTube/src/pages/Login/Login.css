@@ -1,40 +1,167 @@
-.login-page{
+/* ===== Login/Signup Page ===== */
+.login-page {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: #f9f9f9;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 20px;
 }
 
-.login-container{
-  width: 400px;
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.login-container h2{
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.login-container input{
+.login-container {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
+  max-width: 420px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Tabs ===== */
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.auth-tab::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #ff0000;
+  border-radius: 3px 3px 0 0;
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
+}
+
+.auth-tab.active {
+  color: var(--text-primary);
+}
+
+.auth-tab.active::after {
+  transform: scaleX(1);
+}
+
+.auth-tab:hover:not(.active) {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+/* ===== Form ===== */
+.auth-form {
+  padding: 30px 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.auth-form h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.auth-subtitle {
+  margin: 0 0 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 13px 16px;
+  margin-bottom: 14px;
   border-radius: 10px;
-  border: 1px solid #ccc;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
   outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
-.login-container button{
+.auth-form input::placeholder {
+  color: var(--text-secondary);
+}
+
+.auth-form input:focus {
+  border-color: #ff0000;
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+}
+
+/* ===== Submit Button ===== */
+.submit-btn {
   width: 100%;
-  padding: 12px;
+  padding: 13px;
+  margin-top: 4px;
   border: none;
   border-radius: 10px;
-  background: rgb(235, 235, 235);
-  color: black;
-  font-size: 16px;
+  background: #ff0000;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(255, 0, 0, 0.3);
+}
+
+.submit-btn:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Switch Text ===== */
+.switch-text {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.switch-text span {
+  color: #ff0000;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.switch-text span:hover {
+  color: #cc0000;
 }

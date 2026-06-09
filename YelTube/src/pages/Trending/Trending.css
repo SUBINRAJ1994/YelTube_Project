@@ -1,0 +1,113 @@
+.trending-page {
+  padding: 100px 32px 40px 272px; /* Clears fixed header and sidebar */
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.trending-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ===== Header ===== */
+.trending-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.trending-fire-icon {
+  font-size: 36px;
+  color: #ff0000;
+  filter: drop-shadow(0 0 10px rgba(255,0,0,0.4));
+}
+
+.trending-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.trending-header p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin: 4px 0 0 0;
+  font-weight: 500;
+}
+
+/* ===== Category selector chips ===== */
+.trending-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.trending-tab-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.trending-tab-chip:hover {
+  background: var(--hover-bg);
+}
+
+.trending-tab-chip.active {
+  background: #ff0000;
+  color: #fff;
+  border-color: #ff0000;
+  box-shadow: 0 4px 14px rgba(255, 0, 0, 0.35);
+}
+
+.trending-tab-chip.active span {
+  color: #fff;
+}
+
+/* ===== Video Grid ===== */
+.trending-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.trending-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 16px;
+}
+
+.trending-empty h3 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.trending-empty p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 6px 0 0 0;
+}
+
+/* ===== Responsive Padding ===== */
+@media (max-width: 1024px) {
+  .trending-page {
+    padding: 100px 16px 40px 16px;
+  }
+}
