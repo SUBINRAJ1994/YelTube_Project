@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import videos from "../../data/videos";
 import "./Watch.css";
 import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList, FaEdit, FaTrash, FaReply, FaFlag, FaCog } from "react-icons/fa";
@@ -9,6 +9,7 @@ import ShareModal from "../../components/ShareModal/ShareModal";
 
 const Watch = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
   const allVideos = [...uploadedVideos, ...videos];
   const video = allVideos.find((v) => v.id === parseInt(id, 10));
@@ -138,6 +139,11 @@ useState("");
   };
 
 const handleLike = () => {
+  if (!currentUser) {
+    alert("Please login to like this video.");
+    navigate("/login");
+    return;
+  }
 
   if (!liked) {
 
@@ -214,6 +220,11 @@ localStorage.setItem(
 
 
 const handleDislike = () => {
+  if (!currentUser) {
+    alert("Please login to dislike this video.");
+    navigate("/login");
+    return;
+  }
 
   if (!disliked) {
 
@@ -297,6 +308,11 @@ const handleDislike = () => {
   };
 
   const addComment = () => {
+    if (!currentUser) {
+      alert("Please login to write comments.");
+      navigate("/login");
+      return;
+    }
     if (commentInput.trim() === "") return;
     
     const emailKey = currentUser ? currentUser.email.replace(/[@.]/g, "_") : "";
@@ -322,6 +338,7 @@ const handleDislike = () => {
   const handleLikeComment = (commentId) => {
     if (!currentUser) {
       alert("Please login to like comments.");
+      navigate("/login");
       return;
     }
     const email = currentUser.email;
@@ -348,6 +365,11 @@ const handleDislike = () => {
   };
 
   const handlePostReply = (commentId) => {
+    if (!currentUser) {
+      alert("Please login to reply to comments.");
+      navigate("/login");
+      return;
+    }
     const text = replyInputs[commentId] || "";
     if (!text.trim()) return;
 
@@ -399,6 +421,11 @@ const handleDislike = () => {
   };
 
   const handleReportComment = (comment) => {
+    if (!currentUser) {
+      alert("Please login to report comments.");
+      navigate("/login");
+      return;
+    }
     if (!window.confirm("Report this comment for spam or abuse?")) return;
     const updated = comments.map((c) => {
       if (c.id === comment.id) {
@@ -517,6 +544,11 @@ const handleDislike = () => {
     );
   }
 const handleWatchLater = () => {
+  if (!currentUser) {
+    alert("Please login to save videos to Watch Later.");
+    navigate("/login");
+    return;
+  }
   let watchLater = JSON.parse(localStorage.getItem("watchLater")) || [];
   const alreadyExists = watchLater.some((item) => item.id === video.id);
   if (alreadyExists){
@@ -532,6 +564,11 @@ const handleWatchLater = () => {
     setShowShareModal(true);
   };
 const addToPlaylist = () => {
+  if (!currentUser) {
+    alert("Please login to add videos to playlists.");
+    navigate("/login");
+    return;
+  }
 
   if (!selectedPlaylist) {
 
@@ -589,6 +626,11 @@ const addToPlaylist = () => {
 
 };
 const handleSubscribe = () => {
+  if (!currentUser) {
+    alert("Please login to subscribe to channels.");
+    navigate("/login");
+    return;
+  }
   let subscriptions =
     JSON.parse(
       localStorage.getItem("subscriptions")

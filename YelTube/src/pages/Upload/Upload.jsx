@@ -149,6 +149,7 @@ const Upload = () => {
   const [thumbnail, setThumbnail] = useState(null);
   const [videoPreview, setVideoPreview] = useState("");
   const [thumbnailPreview, setThumbnailPreview] = useState("");
+  const [videoDuration, setVideoDuration] = useState("");
   
   // Content Moderation States
   const [uploadStep, setUploadStep] = useState("");
@@ -218,7 +219,7 @@ const Upload = () => {
           channelLogo: "https://i.pravatar.cc/40",
           views: "0 views",
           time: "Just now",
-          duration: "3:00",
+          duration: videoDuration || "3:00",
           youtubeId: "dQw4w9WgXcQ",
           moderationStatus: report.status
         };
@@ -315,15 +316,15 @@ const Upload = () => {
       setUploadProgress(progress);
 
       if (progress < 20) {
-        setUploadStep("Preprocessing: Uploading files...");
+        setUploadStep("FFmpeg: Detecting video duration and resolution metadata...");
       } else if (progress >= 20 && progress < 40) {
-        setUploadStep("Preprocessing: Extracting keyframes and audio using FFmpeg...");
+        setUploadStep("FFmpeg: Compressing video file (converting resolution to 1080p)...");
       } else if (progress >= 40 && progress < 60) {
-        setUploadStep("Preprocessing: Generating speech-to-text transcripts...");
+        setUploadStep("FFmpeg: Auto-extracting keyframes and generating thumbnails...");
       } else if (progress >= 60 && progress < 80) {
-        setUploadStep("Preprocessing: Detecting language automatically...");
+        setUploadStep("Preprocessing: Generating transcripts & auto-detecting language...");
       } else if (progress >= 80 && progress < 95) {
-        setUploadStep("Analyzing content via AI Content Moderation Engine...");
+        setUploadStep("AI Content Moderation Engine: Scanning video frames and audio track...");
       } else if (progress === 95) {
         clearInterval(interval);
         
@@ -580,20 +581,30 @@ const Upload = () => {
           type="file"
           accept="video/*"
           onChange={(e) => {
-
-            const file =
-              e.target.files[0];
-
+            const file = e.target.files[0];
             if (!file) return;
 
             setVideoFile(file);
+            setVideoPreview(URL.createObjectURL(file));
 
-            setVideoPreview(
-              URL.createObjectURL(file)
-            );
-
+            const videoEl = document.createElement("video");
+            videoEl.preload = "metadata";
+            videoEl.src = URL.createObjectURL(file);
+            videoEl.onloadedmetadata = () => {
+              URL.revokeObjectURL(videoEl.src);
+              const minutes = Math.floor(videoEl.duration / 60);
+              const seconds = Math.floor(videoEl.duration % 60);
+              setVideoDuration(`${minutes}:${String(seconds).padStart(2, "0")}`);
+            };
           }}
         />
+
+        {videoFile && (
+          <div className="file-metadata-info" style={{ margin: "6px 0 12px 0", fontSize: "13px", color: "var(--text-secondary)", display: "flex", gap: "16px" }}>
+            <span><strong>Size:</strong> {(videoFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+            {videoDuration && <span><strong>Duration:</strong> {videoDuration}</span>}
+          </div>
+        )}
 
         {
           videoPreview && (
@@ -615,20 +626,19 @@ const Upload = () => {
           type="file"
           accept="image/*"
           onChange={(e) => {
-
-            const file =
-              e.target.files[0];
-
+            const file = e.target.files[0];
             if (!file) return;
 
             setThumbnail(file);
-
-            setThumbnailPreview(
-              URL.createObjectURL(file)
-            );
-
+            setThumbnailPreview(URL.createObjectURL(file));
           }}
         />
+
+        {thumbnail && (
+          <div className="file-metadata-info" style={{ margin: "6px 0 12px 0", fontSize: "13px", color: "var(--text-secondary)" }}>
+            <span><strong>Size:</strong> {(thumbnail.size / 1024).toFixed(1)} KB</span>
+          </div>
+        )}
 
         {
           thumbnailPreview && (

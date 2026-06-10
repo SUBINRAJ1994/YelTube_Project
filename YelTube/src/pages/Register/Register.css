@@ -1,40 +1,286 @@
-.register-page{
+/* ===== Register Page ===== */
+.register-page {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: #f9f9f9;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 20px;
 }
 
-.register-container{
-  width: 400px;
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+.register-container {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  padding: 30px 32px 36px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  animation: fadeInUp 0.4s ease;
 }
 
-.register-container h2{
-  margin-bottom: 20px;
+.register-container h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
   text-align: center;
 }
 
-.register-container input{
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  outline: none;
+.register-subtitle {
+  margin: 0 0 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
 }
 
-.register-container button{
+.register-container input {
   width: 100%;
-  padding: 12px;
+  padding: 13px 16px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.register-container input::placeholder {
+  color: var(--text-secondary);
+}
+
+.register-container input:focus {
+  border-color: #ff0000;
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+}
+
+/* ===== Submit Button ===== */
+.register-submit-btn {
+  width: 100%;
+  padding: 13px;
+  margin-top: 4px;
   border: none;
   border-radius: 10px;
-  background: rgb(153, 153, 153);
-  color: black;
-  font-size: 16px;
+  background: #ff0000;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
+  letter-spacing: 0.3px;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 16px rgba(255, 0, 0, 0.3);
+}
+
+.register-submit-btn:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+}
+
+.register-submit-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Switch Text ===== */
+.switch-text-register {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.switch-text-register span {
+  color: #ff0000;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.switch-text-register span:hover {
+  color: #cc0000;
+}
+
+/* ===== Show/Hide Password Toggle ===== */
+.password-input-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.password-input-container input {
+  margin-bottom: 0 !important;
+  padding-right: 44px !important;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-icon:hover {
+  color: var(--text-primary);
+}
+
+/* ===== Avatar Upload on Register ===== */
+.avatar-upload-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 8px;
+}
+
+.avatar-preview-wrap {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px dashed var(--border-color);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  background: var(--bg-primary);
+}
+
+.avatar-preview-wrap:hover {
+  border-color: #ff0000;
+}
+
+.avatar-preview-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.avatar-preview-wrap:hover .avatar-upload-overlay {
+  opacity: 1;
+}
+
+.avatar-upload-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== Auth Separator ===== */
+.auth-separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 18px 0;
+}
+
+.auth-separator::before,
+.auth-separator::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1.5px solid var(--border-color);
+}
+
+.auth-separator:not(:empty)::before {
+  margin-right: 12px;
+}
+
+.auth-separator:not(:empty)::after {
+  margin-left: 12px;
+}
+
+/* ===== OAuth Buttons ===== */
+.oauth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.oauth-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--text-secondary);
+  transform: translateY(-1px);
+}
+
+.oauth-btn:active {
+  transform: translateY(0);
+}
+
+.oauth-btn svg {
+  font-size: 16px;
+}
+
+.oauth-btn.google svg {
+  color: #ea4335;
+}
+
+.oauth-btn.facebook svg {
+  color: #1877f2;
+}
+
+/* ===== Date of Birth Pickers ===== */
+.dob-input-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.dob-date-picker {
+  cursor: pointer;
+  margin-bottom: 14px;
 }

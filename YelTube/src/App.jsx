@@ -30,6 +30,7 @@ import Community from "./pages/Community/Community";
 import Trending from "./pages/Trending/Trending";
 import Explore from "./pages/Explore/Explore";
 import Premium from "./pages/Premium/Premium";
+import Search from "./pages/Search/Search";
 
 const App = () => {
   const [sidebar, setSidebar] = useState(window.innerWidth > 1024);
@@ -100,6 +101,7 @@ const App = () => {
         <Route path="/trending" element={<Trending />} />
         <Route path="/explore" element={<Explore />} />
         <Route path="/premium" element={<Premium />} />
+        <Route path="/search" element={<Search />} />
       </Routes>
     </Router>
   );

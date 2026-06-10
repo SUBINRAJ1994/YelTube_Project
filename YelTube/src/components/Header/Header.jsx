@@ -66,7 +66,7 @@ function Header({
   const triggerSearch = (query) => {
     setSearchQuery(query);
     setShowSuggestions(false);
-    navigate("/");
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const handleKeyDown = (e) => {
@@ -250,7 +250,11 @@ function Header({
           <div className="profile-section">
 
             <img
-              src="https://i.pravatar.cc/40"
+              src={
+                localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) ||
+                currentUser.avatar ||
+                "https://i.pravatar.cc/40"
+              }
               alt="Profile"
               className="profile-image"
               onClick={() =>

@@ -1,0 +1,253 @@
+/* ===== Search Results Page ===== */
+.search-results-page {
+  padding-left: 240px;
+  padding-right: 24px;
+  padding-top: 80px;
+  min-height: 100vh;
+  background: var(--bg-color);
+  color: var(--text-color);
+  box-sizing: border-box;
+}
+
+.search-results-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-results-header {
+  margin-bottom: 24px;
+}
+
+.search-results-header h2 {
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 6px 0;
+}
+
+.search-header-icon {
+  color: #ff0000;
+}
+
+.search-results-header p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ===== Tabs ===== */
+.search-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 14px;
+}
+
+.search-tab-chip {
+  background: var(--hover-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-tab-chip:hover {
+  background: var(--border-color);
+}
+
+.search-tab-chip.active {
+  background: #ff0000;
+  color: white;
+  border-color: #ff0000;
+  box-shadow: 0 4px 12px rgba(255, 0, 0, 0.25);
+}
+
+/* ===== Sections ===== */
+.search-section {
+  margin-bottom: 40px;
+}
+
+.search-section h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+  color: var(--text-color);
+  border-left: 4px solid #ff0000;
+  padding-left: 10px;
+}
+
+/* ===== Channels ===== */
+.search-channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.search-channel-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.search-channel-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.search-channel-info {
+  flex: 1;
+}
+
+.search-channel-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.search-channel-badge {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.search-channel-visit-btn {
+  background: var(--hover-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-channel-visit-btn:hover {
+  background: var(--border-color);
+}
+
+/* ===== Playlists ===== */
+.search-playlists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.search-playlist-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.search-playlist-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.search-playlist-preview {
+  height: 120px;
+  background: var(--hover-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.search-playlist-icon {
+  font-size: 44px;
+  color: var(--text-secondary);
+}
+
+.search-playlist-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.search-playlist-info {
+  padding: 12px;
+}
+
+.search-playlist-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.search-playlist-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* ===== Videos ===== */
+.search-videos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+/* ===== Empty State ===== */
+.search-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+}
+
+.empty-search-icon {
+  font-size: 64px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.search-empty-state h3 {
+  font-size: 20px;
+  margin: 0 0 8px 0;
+}
+
+.search-empty-state p {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ===== Responsive Layout ===== */
+@media (max-width: 1024px) {
+  .search-results-page {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+body.sidebar-collapsed .search-results-page {
+  padding-left: 24px;
+}

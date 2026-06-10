@@ -12,7 +12,7 @@ import {
   FaGem,
   FaShieldAlt,
 } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // Simulated chat messages with usernames, colors, and potential mod status
 const MOCK_CHAT = [
@@ -60,6 +60,7 @@ const UPCOMING_STREAMS = [
 let msgIdCounter = 100;
 
 const LiveStream = () => {
+  const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   // ── Persistent: chat messages ──
@@ -170,6 +171,11 @@ const LiveStream = () => {
 
   // ── Handlers ──
   const sendMessage = () => {
+    if (!currentUser) {
+      alert("Please login first to send a message.");
+      navigate("/login");
+      return;
+    }
     if (!input.trim()) return;
     const now      = new Date();
     const time     = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -185,6 +191,7 @@ const LiveStream = () => {
   const sendSuperChat = () => {
     if (!currentUser) {
       alert("Please login first to send a Super Chat.");
+      navigate("/login");
       return;
     }
     if (!scText.trim()) return;
@@ -211,6 +218,11 @@ const LiveStream = () => {
   };
 
   const handleLike = () => {
+    if (!currentUser) {
+      alert("Please login first to like the stream.");
+      navigate("/login");
+      return;
+    }
     if (liked) {
       setLiked(false);
       setLikeCount((c) => c - 1);
@@ -222,6 +234,11 @@ const LiveStream = () => {
   };
 
   const handleDislike = () => {
+    if (!currentUser) {
+      alert("Please login first to dislike the stream.");
+      navigate("/login");
+      return;
+    }
     if (disliked) {
       setDisliked(false);
     } else {
@@ -234,6 +251,11 @@ const LiveStream = () => {
   };
 
   const handleSubscribe = () => {
+    if (!currentUser) {
+      alert("Please login first to subscribe.");
+      navigate("/login");
+      return;
+    }
     const next = !subscribed;
     setSubscribed(next);
     setFollowers((f) => next ? f + 1 : Math.max(0, f - 1));
@@ -257,6 +279,11 @@ const LiveStream = () => {
   };
 
   const toggleReminder = (streamKey) => {
+    if (!currentUser) {
+      alert("Please login first to toggle reminders.");
+      navigate("/login");
+      return;
+    }
     setReminders((prev) => {
       const updated = { ...prev, [streamKey]: !prev[streamKey] };
       return updated;
