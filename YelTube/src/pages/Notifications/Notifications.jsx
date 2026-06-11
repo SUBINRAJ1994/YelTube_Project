@@ -38,12 +38,18 @@ const Notifications = () => {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    let stored = JSON.parse(localStorage.getItem("notifications"));
-    if (!stored || stored.length === 0) {
-      localStorage.setItem("notifications", JSON.stringify(MOCK_NOTIFICATIONS));
-      stored = MOCK_NOTIFICATIONS;
-    }
-    setNotifications(stored);
+    const loadNotif = () => {
+      let stored = JSON.parse(localStorage.getItem("notifications"));
+      if (!stored || stored.length === 0) {
+        localStorage.setItem("notifications", JSON.stringify(MOCK_NOTIFICATIONS));
+        stored = MOCK_NOTIFICATIONS;
+      }
+      setNotifications(stored);
+    };
+
+    loadNotif();
+    window.addEventListener("notifications_updated", loadNotif);
+    return () => window.removeEventListener("notifications_updated", loadNotif);
   }, []);
 
   const saveNotifications = (updated) => {

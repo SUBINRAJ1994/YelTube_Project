@@ -30,6 +30,7 @@ import Community from "./pages/Community/Community";
 import Trending from "./pages/Trending/Trending";
 import Explore from "./pages/Explore/Explore";
 import Premium from "./pages/Premium/Premium";
+import SearchResults from "./pages/SearchResults/SearchResults";
 
 const App = () => {
   const [sidebar, setSidebar] = useState(window.innerWidth > 1024);
@@ -73,6 +74,7 @@ const App = () => {
 
       <Routes>
         <Route path="/" element={<Home searchQuery={searchQuery} selectedCategory={selectCategory} sidebar={sidebar} />} />
+        <Route path="/results" element={<SearchResults />} />
         <Route path="/watch/:id" element={<Watch />} />
         <Route path="/shorts" element={<Shorts />} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />

@@ -1,5 +1,6 @@
 import "./Shorts.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import shortsData from "../../data/shortsData";
 import {
   FaHeart,
@@ -8,10 +9,11 @@ import {
   FaTrash,
   FaClock,
   FaMusic,
+  FaPlusCircle,
 } from "react-icons/fa";
 
 const Shorts = () => {
-  // Initialize state with correct 'commentsList' key to avoid undefined bugs
+  // Initialize state from localStorage or defaults
   const [shortsState, setShortsState] = useState(() => {
     const saved = localStorage.getItem("shortsData");
     return saved
@@ -31,10 +33,121 @@ const Shorts = () => {
         }));
   });
 
+  const videoRefs = useRef({});
+  const containerRef = useRef(null);
+
   // Sync state to local storage
   useEffect(() => {
     localStorage.setItem("shortsData", JSON.stringify(shortsState));
   }, [shortsState]);
+
+  // Setup IntersectionObserver for play/pause states on visible items
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = entry.target;
+          if (entry.isIntersecting) {
+            // Pause all other videos first
+            Object.values(videoRefs.current).forEach((v) => {
+              if (v && v !== video) {
+                try { v.pause(); } catch (e) {}
+              }
+            });
+            // Play target video
+            video.play().catch((err) => {
+              console.log("Autoplay blocked: ", err);
+            });
+          } else {
+            video.pause();
+          }
+        });
+      },
+      {
+        threshold: 0.6,
+      }
+    );
+
+    const currentRefs = videoRefs.current;
+    Object.values(currentRefs).forEach((video) => {
+      if (video) observer.observe(video);
+    });
+
+    return () => {
+      Object.values(currentRefs).forEach((video) => {
+        if (video) observer.unobserve(video);
+      });
+      observer.disconnect();
+    };
+  }, [shortsState]);
+
+  // Keyboard Navigation: ArrowUp / ArrowDown
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const container = containerRef.current;
+        if (!container) return;
+
+        const cardHeight = container.clientHeight;
+        const currentScroll = container.scrollTop;
+        let targetScroll = currentScroll;
+
+        if (e.key === "ArrowDown") {
+          targetScroll = currentScroll + cardHeight;
+        } else {
+          targetScroll = currentScroll - cardHeight;
+        }
+
+        container.scrollTo({
+          top: targetScroll,
+          behavior: "smooth",
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Floating button scroll handler
+  const scrollShort = (direction) => {
+    const container = containerRef.current;
+    if (!container) return;
+    const cardHeight = container.clientHeight;
+    const currentScroll = container.scrollTop;
+
+    container.scrollTo({
+      top: direction === "down" ? currentScroll + cardHeight : currentScroll - cardHeight,
+      behavior: "smooth",
+    });
+  };
+
+  // Infinite Scroll Trigger
+  const handleScroll = (e) => {
+    const container = e.target;
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 300;
+    
+    if (isNearBottom) {
+      // Append a randomized/cloned copy of base data to create infinite feed
+      setShortsState((prev) => {
+        const cloned = shortsData.map((video) => ({
+          ...video,
+          id: `clone_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          likes: video.like || Math.floor(Math.random() * 200) + 12,
+          dislikes: Math.floor(Math.random() * 10),
+          liked: false,
+          disliked: false,
+          commentsList: [
+            { id: 1, user: "Viewer_" + Math.floor(Math.random() * 900), text: "Awesome content! 🚀" }
+          ],
+          showComments: false,
+          commentInput: "",
+        }));
+        return [...prev, ...cloned];
+      });
+    }
+  };
 
   const handleLike = (id) => {
     setShortsState((prev) =>
@@ -51,7 +164,6 @@ const Shorts = () => {
             disliked: false,
           };
 
-          // Save to likedVideos in localStorage
           let likedVideos = JSON.parse(localStorage.getItem("likedVideos")) || [];
           if (!likedVideos.some((item) => item.id === short.id)) {
             likedVideos.unshift(updatedShort);
@@ -239,7 +351,7 @@ const Shorts = () => {
   const togglePlayVideo = (e) => {
     const video = e.target;
     if (video.paused) {
-      video.play();
+      video.play().catch(() => {});
     } else {
       video.pause();
     }
@@ -247,19 +359,36 @@ const Shorts = () => {
 
   return (
     <div className="shorts-page">
-      <div className="shorts-scroll-container">
+      {/* Floating Create Short button */}
+      <Link to="/upload?category=Shorts" className="create-short-btn-floating" title="Create Short">
+        <FaPlusCircle />
+        <span>Create Short</span>
+      </Link>
+
+      {/* Floating Up/Down snap scroll hover buttons */}
+      <div className="shorts-navigation-buttons">
+        <button className="nav-btn up" onClick={() => scrollShort("up")} title="Previous Short">▲</button>
+        <button className="nav-btn down" onClick={() => scrollShort("down")} title="Next Short">▼</button>
+      </div>
+
+      <div className="shorts-scroll-container" ref={containerRef} onScroll={handleScroll}>
         {shortsState.map((short) => {
-          const channelHandle = `@creator_${short.id}`;
-          const avatarUrl = `https://ui-avatars.com/api/?name=C${short.id}&background=ff0000&color=ffffff&bold=true`;
+          const channelHandle = `@creator_${short.id.toString().substring(0, 5)}`;
+          const avatarUrl = `https://ui-avatars.com/api/?name=C${short.id.toString().substring(0,1)}&background=ff0000&color=ffffff&bold=true`;
 
           return (
             <div className="short-card" key={short.id}>
               <div className="short-video-container">
-                {/* Immersive HTML5 Video */}
                 <video
+                  ref={(el) => {
+                    if (el) {
+                      videoRefs.current[short.id] = el;
+                    } else {
+                      delete videoRefs.current[short.id];
+                    }
+                  }}
                   src={short.video}
                   className="short-video"
-                  autoPlay
                   muted
                   loop
                   onClick={togglePlayVideo}
@@ -281,7 +410,6 @@ const Shorts = () => {
 
                 {/* Right vertical action column overlays */}
                 <div className="short-actions">
-                  {/* Creator avatar with subscribe trigger */}
                   <div className="action-avatar-group">
                     <img src={avatarUrl} alt="Creator" className="action-avatar-img" />
                     <div className="avatar-plus-btn">+</div>

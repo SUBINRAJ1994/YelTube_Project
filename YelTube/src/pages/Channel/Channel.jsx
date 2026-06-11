@@ -1,88 +1,181 @@
 import { useState, useEffect, useRef } from "react";
 import "./Channel.css";
 import VideoCard from "../../components/VideoCard/VideoCard";
-import { FaCamera, FaEdit, FaSave, FaPlusCircle, FaHeart, FaCommentAlt } from "react-icons/fa";
-import { Link } from "react-router-dom";
+import { FaCamera, FaEdit, FaSave, FaPlusCircle, FaHeart, FaBell, FaPlayCircle } from "react-icons/fa";
+import { Link, useLocation } from "react-router-dom";
+import shortsData from "../../data/shortsData";
 
 const Channel = () => {
+  const location = useLocation();
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const [activeTab, setActiveTab] = useState("videos");
-  const [myVideos, setMyVideos] = useState([]);
   
-  // Custom states for profile images
+  // Extract channel name from search query (e.g., /channel?name=John)
+  const params = new URLSearchParams(location.search);
+  const targetChannelName = params.get("name");
+
+  // Determine if viewing own channel
+  const isOwnChannel = !targetChannelName || (currentUser && currentUser.name.toLowerCase() === targetChannelName.toLowerCase());
+
+  // Load target user profile
+  const [channelUser, setChannelUser] = useState(null);
   const [profileImage, setProfileImage] = useState("https://i.pravatar.cc/150");
   const [bannerImage, setBannerImage] = useState("");
-  
-  // Description and edit state
-  const [channelDesc, setChannelDesc] = useState("This is your public YelTube channel. Customize this space to introduce yourself, link your social media, and show off your creative content.");
+  const [channelDesc, setChannelDesc] = useState("This is a YelTube channel dedicated to creating premium digital content.");
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [descInput, setDescInput] = useState("");
 
-  // Playlists and community posts
+  const [activeTab, setActiveTab] = useState("videos");
+  const [videos, setVideos] = useState([]);
+  const [shorts, setShorts] = useState([]);
   const [playlists, setPlaylists] = useState([]);
-  const [posts, setPosts] = useState([]);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscribers, setSubscribers] = useState(1200);
 
-  // File input refs
   const avatarInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
   useEffect(() => {
-    if (!currentUser) return;
-
-    // Load videos
-    const a = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-    const b = JSON.parse(localStorage.getItem("myVideos")) || [];
-    const seen = new Set();
-    const mergedVideos = [...a, ...b].filter((v) => {
-      if (seen.has(v.id)) return false;
-      seen.add(v.id);
-      return true;
-    });
-    setMyVideos(mergedVideos);
-
-    // Load avatar & banner
-    const emailKey = currentUser.email.replace(/[@.]/g, "_");
-    const storedAvatar = localStorage.getItem(`profileImage_${emailKey}`);
-    if (storedAvatar) setProfileImage(storedAvatar);
+    // 1. Identify which channel user to load
+    let activeUser = null;
+    const users = JSON.parse(localStorage.getItem("users")) || [];
     
-    const storedBanner = localStorage.getItem(`bannerImage_${emailKey}`);
-    if (storedBanner) setBannerImage(storedBanner);
-
-    // Load description
-    const storedDesc = localStorage.getItem(`channelDesc_${emailKey}`);
-    if (storedDesc) {
-      setChannelDesc(storedDesc);
-      setDescInput(storedDesc);
+    if (isOwnChannel) {
+      if (currentUser) {
+        activeUser = currentUser;
+      }
     } else {
-      setDescInput(channelDesc);
+      activeUser = users.find(u => u.name.toLowerCase() === targetChannelName.toLowerCase());
+      if (!activeUser) {
+        // Fallback mock user if channel name doesn't exist in registered users
+        activeUser = {
+          name: targetChannelName,
+          email: `${targetChannelName.toLowerCase().replace(/\s+/g, "")}@example.com`,
+          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(targetChannelName)}&background=00bcd4&color=fff&bold=true`
+        };
+      }
+    }
+
+    setChannelUser(activeUser);
+    if (!activeUser) return;
+
+    const emailKey = activeUser.email.replace(/[@.]/g, "_");
+
+    // Load profile images
+    const storedAvatar = localStorage.getItem(`profileImage_${emailKey}`);
+    setProfileImage(storedAvatar || activeUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeUser.name)}&background=random&color=fff`);
+
+    const storedBanner = localStorage.getItem(`bannerImage_${emailKey}`);
+    setBannerImage(storedBanner || "");
+
+    // Load Description
+    const storedDesc = localStorage.getItem(`channelDesc_${emailKey}`);
+    const defaultDesc = isOwnChannel 
+      ? "This is your public YelTube channel. Customize this space to introduce yourself, link your social media, and show off your creative content."
+      : `Welcome to the official YelTube channel of ${activeUser.name}. Subscribe to stay updated!`;
+    setChannelDesc(storedDesc || defaultDesc);
+    setDescInput(storedDesc || defaultDesc);
+
+    // Load subscriber count
+    const storedSubs = localStorage.getItem(`subs_count_${emailKey}`);
+    if (storedSubs) {
+      setSubscribers(parseInt(storedSubs, 10));
+    } else {
+      const randomSubs = Math.floor(Math.random() * 4500) + 120;
+      setSubscribers(randomSubs);
+      localStorage.setItem(`subs_count_${emailKey}`, randomSubs);
+    }
+
+    // Load subscription status (for logged-in user checking this channel)
+    if (currentUser) {
+      const subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
+      setIsSubscribed(subscriptions.includes(activeUser.name));
+    }
+
+    // Load uploaded videos
+    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+    const blacklist = JSON.parse(localStorage.getItem("deletedVideoIds")) || [];
+    
+    // Filter videos where video channel matches this active user
+    const userVideos = uploaded.filter(v => v.channel === activeUser.name && !blacklist.includes(v.id));
+    setVideos(userVideos);
+
+    // Filter user shorts (videos categorized as Shorts, plus mock items if empty)
+    const userShorts = userVideos.filter(v => v.category === "Shorts");
+    if (userShorts.length > 0) {
+      setShorts(userShorts);
+    } else {
+      // Load a subset of default shorts labeled as creator's shorts for premium preview
+      setShorts(shortsData.slice(0, 3).map(s => ({ ...s, channel: activeUser.name, views: "4.8K views" })));
     }
 
     // Load Playlists
-    const storedPlaylists = JSON.parse(localStorage.getItem("playlists")) || [];
-    setPlaylists(storedPlaylists);
+    const allPlaylists = JSON.parse(localStorage.getItem("playlists")) || [];
+    // Show playlists containing videos or mock user playlists
+    setPlaylists(allPlaylists);
 
-    // Load Community Posts
-    const storedPosts = JSON.parse(localStorage.getItem("communityPosts")) || [];
-    setPosts(storedPosts);
-  }, []);
+  }, [targetChannelName, location.search]);
 
-  if (!currentUser) {
+  if (!currentUser && isOwnChannel) {
     return (
       <div className="channel-page-empty">
         <h2>Please Login</h2>
-        <p>You must be signed in to customize and view your channel.</p>
+        <p>You must be signed in to view and customize your channel.</p>
         <Link to="/login"><button className="login-redirect-btn">Login Now</button></Link>
       </div>
     );
   }
 
-  const emailKey = currentUser.email.replace(/[@.]/g, "_");
+  if (!channelUser) {
+    return (
+      <div className="channel-page-empty">
+        <h2>Channel Not Found</h2>
+        <p>The channel you are looking for does not exist on YelTube.</p>
+        <Link to="/"><button className="login-redirect-btn">Go Home</button></Link>
+      </div>
+    );
+  }
 
-  // Handle Profile Upload
-  const handleAvatarClick = () => {
-    avatarInputRef.current?.click();
+  const emailKey = channelUser.email.replace(/[@.]/g, "_");
+
+  // Subscribe Handler
+  const handleSubscribe = () => {
+    if (!currentUser) {
+      alert("Please log in to subscribe to channels.");
+      return;
+    }
+
+    let subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
+    let updatedSubs = [...subscriptions];
+    let newSubCount = subscribers;
+
+    if (isSubscribed) {
+      updatedSubs = updatedSubs.filter(name => name !== channelUser.name);
+      newSubCount = Math.max(0, subscribers - 1);
+      setIsSubscribed(false);
+      setSubscribers(newSubCount);
+    } else {
+      updatedSubs.push(channelUser.name);
+      newSubCount = subscribers + 1;
+      setIsSubscribed(true);
+      setSubscribers(newSubCount);
+
+      // Create a subscription notification
+      const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+      notifications.unshift({
+        id: Date.now(),
+        type: "subscriptions",
+        message: `${currentUser.name} subscribed to your channel!`,
+        read: false,
+        timestamp: new Date().toISOString()
+      });
+      localStorage.setItem("notifications", JSON.stringify(notifications));
+    }
+
+    localStorage.setItem("subscriptions", JSON.stringify(updatedSubs));
+    localStorage.setItem(`subs_count_${emailKey}`, newSubCount);
   };
 
+  // Profile Uploads
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -91,15 +184,9 @@ const Channel = () => {
       const dataUrl = ev.target.result;
       setProfileImage(dataUrl);
       localStorage.setItem(`profileImage_${emailKey}`, dataUrl);
-      // Synchronize current profile image in Header
       localStorage.setItem(`profileImage_${currentUser.email}`, dataUrl);
     };
     reader.readAsDataURL(file);
-  };
-
-  // Handle Banner Upload
-  const handleBannerClick = () => {
-    bannerInputRef.current?.click();
   };
 
   const handleBannerChange = (e) => {
@@ -114,20 +201,14 @@ const Channel = () => {
     reader.readAsDataURL(file);
   };
 
-  // Handle Description Update
   const handleSaveDesc = () => {
     setChannelDesc(descInput);
     localStorage.setItem(`channelDesc_${emailKey}`, descInput);
     setIsEditingDesc(false);
   };
 
-  // Stats calculation
-  const totalViews = myVideos.reduce((s, v) => s + (v.views || 0), 0);
-  const subscriberCount = parseInt(localStorage.getItem("streamFollowers")) || 0;
-
   return (
     <div className="channel-page">
-      {/* Hidden File Inputs */}
       <input
         type="file"
         accept="image/*"
@@ -147,42 +228,60 @@ const Channel = () => {
       <div
         className="channel-banner"
         style={{
-          background: bannerImage ? `url(${bannerImage}) center/cover no-repeat` : "linear-gradient(135deg, #2c2c54 0%, #111122 100%)",
+          background: bannerImage ? `url(${bannerImage}) center/cover no-repeat` : "linear-gradient(135deg, #1f1f2e 0%, #0c0c14 100%)",
         }}
       >
-        <button className="edit-banner-btn" onClick={handleBannerClick} title="Upload banner">
-          <FaCamera /> Update Banner
-        </button>
+        {isOwnChannel && (
+          <button className="edit-banner-btn" onClick={() => bannerInputRef.current.click()} title="Upload banner">
+            <FaCamera /> Update Banner
+          </button>
+        )}
       </div>
 
-      {/* Profile Info */}
+      {/* Profile Info Row */}
       <div className="channel-info-container">
         <div className="channel-avatar-wrap">
           <img src={profileImage} alt="Avatar" className="channel-avatar" />
-          <button className="edit-avatar-overlay" onClick={handleAvatarClick} title="Update avatar">
-            <FaCamera />
-          </button>
+          {isOwnChannel && (
+            <button className="edit-avatar-overlay" onClick={() => avatarInputRef.current.click()} title="Update avatar">
+              <FaCamera />
+            </button>
+          )}
         </div>
 
         <div className="channel-text-details">
-          <h2>{currentUser.name}</h2>
-          <p className="channel-handle">@{currentUser.name.toLowerCase().replace(/\s+/g, "")}</p>
+          <h2>{channelUser.name}</h2>
+          <p className="channel-handle">@{channelUser.name.toLowerCase().replace(/\s+/g, "")}</p>
           <div className="channel-meta-stats">
-            <span><strong>{subscriberCount.toLocaleString()}</strong> Subscribers</span>
+            <span><strong>{subscribers.toLocaleString()}</strong> Subscribers</span>
             <span className="dot">•</span>
-            <span><strong>{myVideos.length}</strong> Videos</span>
-            <span className="dot">•</span>
-            <span><strong>{totalViews.toLocaleString()}</strong> Total Views</span>
+            <span><strong>{videos.length}</strong> Videos</span>
+          </div>
+
+          <div className="channel-actions-row">
+            {!isOwnChannel ? (
+              <button 
+                className={`subscribe-channel-btn ${isSubscribed ? "subscribed" : ""}`} 
+                onClick={handleSubscribe}
+              >
+                {isSubscribed ? "Subscribed" : "Subscribe"}
+              </button>
+            ) : (
+              <div className="channel-owner-actions">
+                <Link to="/studio"><button className="owner-action-btn studio-btn">Creator Studio</button></Link>
+                <button className="owner-action-btn edit-btn" onClick={() => { setActiveTab("about"); setIsEditingDesc(true); }}>Edit Bio</button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
+      {/* Tabs */}
       <div className="channel-tabs">
         {[
           { id: "videos", label: "Videos" },
+          { id: "shorts", label: "Shorts" },
           { id: "playlists", label: "Playlists" },
-          { id: "community", label: "Community" },
           { id: "about", label: "About" },
         ].map((tab) => (
           <button
@@ -195,37 +294,54 @@ const Channel = () => {
         ))}
       </div>
 
-      {/* Tab Contents */}
+      {/* Tab contents */}
       <div className="channel-tab-content">
-        {/* VIDEOS TAB */}
         {activeTab === "videos" && (
           <div className="channel-videos-grid">
-            {myVideos.length === 0 ? (
+            {videos.length === 0 ? (
               <div className="empty-channel-tab">
                 <h3>No videos uploaded yet.</h3>
-                <p>Upload videos inside your Creator Studio to share them with the world.</p>
-                <Link to="/upload">
-                  <button className="upload-channel-btn"><FaPlusCircle /> Upload Video</button>
-                </Link>
+                {isOwnChannel && (
+                  <Link to="/upload">
+                    <button className="upload-channel-btn"><FaPlusCircle /> Upload Video</button>
+                  </Link>
+                )}
               </div>
             ) : (
-              myVideos.map((video) => (
+              videos.map((video) => (
                 <VideoCard key={video.id} video={video} />
               ))
             )}
           </div>
         )}
 
-        {/* PLAYLISTS TAB */}
+        {activeTab === "shorts" && (
+          <div className="channel-shorts-grid">
+            {shorts.length === 0 ? (
+              <div className="empty-channel-tab">
+                <h3>No Shorts uploaded yet.</h3>
+              </div>
+            ) : (
+              shorts.map((short) => (
+                <div key={short.id} className="channel-short-card">
+                  <div className="short-thumb-wrap">
+                    <video src={short.video || short.videoUrl} muted preload="metadata" />
+                    <div className="short-views-overlay">
+                      <FaPlayCircle /> {short.views || "1.2K views"}
+                    </div>
+                  </div>
+                  <h4>{short.title}</h4>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {activeTab === "playlists" && (
           <div className="channel-playlists-grid">
             {playlists.length === 0 ? (
               <div className="empty-channel-tab">
                 <h3>No playlists created yet.</h3>
-                <p>Add watch later videos or custom lists to playlists.</p>
-                <Link to="/playlists">
-                  <button className="upload-channel-btn"><FaPlusCircle /> Go to Playlists</button>
-                </Link>
               </div>
             ) : (
               playlists.map((pl) => (
@@ -245,72 +361,23 @@ const Channel = () => {
           </div>
         )}
 
-        {/* COMMUNITY TAB */}
-        {activeTab === "community" && (
-          <div className="channel-community-feed">
-            {posts.length === 0 ? (
-              <div className="empty-channel-tab">
-                <h3>No community posts yet.</h3>
-                <p>Create posts on the Community feed to interact with your viewers.</p>
-                <Link to="/community">
-                  <button className="upload-channel-btn"><FaPlusCircle /> Write Post</button>
-                </Link>
-              </div>
-            ) : (
-              posts.map((post) => (
-                <div key={post.id} className="channel-post-card">
-                  <div className="post-header-info">
-                    <img src={profileImage} alt="" className="post-avatar" />
-                    <div>
-                      <strong>{currentUser.name}</strong>
-                      <span className="post-time">{new Date(post.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <p className="post-text-body">{post.text}</p>
-                  
-                  {post.isPoll && (
-                    <div className="post-poll-display">
-                      {post.options.map((opt, i) => {
-                        const totalVotes = post.votes?.reduce((s, v) => s + v, 0) || 0;
-                        const votes = post.votes?.[i] || 0;
-                        const pct = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
-                        return (
-                          <div key={opt} className="poll-option-row-display">
-                            <span className="poll-option-label">{opt}</span>
-                            <div className="poll-option-bar-outer">
-                              <div className="poll-option-bar-inner" style={{ width: `${pct}%` }}></div>
-                            </div>
-                            <span className="poll-option-pct">{pct}%</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <div className="post-actions-row">
-                    <span><FaHeart /> {post.likes || 0} Likes</span>
-                    <span><FaCommentAlt /> {post.comments?.length || 0} Comments</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        {/* ABOUT TAB */}
         {activeTab === "about" && (
           <div className="channel-about-section">
             <div className="about-left-desc">
               <div className="desc-header-about">
                 <h3>Description</h3>
-                {!isEditingDesc ? (
-                  <button className="edit-desc-icon-btn" onClick={() => setIsEditingDesc(true)}>
-                    <FaEdit /> Edit
-                  </button>
-                ) : (
-                  <button className="save-desc-icon-btn" onClick={handleSaveDesc}>
-                    <FaSave /> Save
-                  </button>
+                {isOwnChannel && (
+                  <>
+                    {!isEditingDesc ? (
+                      <button className="edit-desc-icon-btn" onClick={() => setIsEditingDesc(true)}>
+                        <FaEdit /> Edit
+                      </button>
+                    ) : (
+                      <button className="save-desc-icon-btn" onClick={handleSaveDesc}>
+                        <FaSave /> Save
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -334,11 +401,11 @@ const Channel = () => {
               </div>
               <div className="about-stat-row">
                 <span>Subscribers</span>
-                <strong>{subscriberCount.toLocaleString()}</strong>
+                <strong>{subscribers.toLocaleString()}</strong>
               </div>
               <div className="about-stat-row">
-                <span>Total Video Views</span>
-                <strong>{totalViews.toLocaleString()}</strong>
+                <span>Total Videos</span>
+                <strong>{videos.length}</strong>
               </div>
             </div>
           </div>

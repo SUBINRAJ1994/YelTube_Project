@@ -4,17 +4,18 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: var(--bg-color, #0f0f0f);
   padding: 20px;
+  transition: background-color 0.3s;
 }
 
 .login-container {
   width: 100%;
   max-width: 420px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: var(--card-bg, #0f0f0f);
+  border: 1px solid var(--border-color, #3f3f3f);
   border-radius: 20px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: fadeInUp 0.4s ease;
 }
@@ -33,7 +34,7 @@
 /* ===== Tabs ===== */
 .auth-tabs {
   display: flex;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color, #3f3f3f);
 }
 
 .auth-tab {
@@ -41,7 +42,8 @@
   padding: 16px;
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.6;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -63,7 +65,8 @@
 }
 
 .auth-tab.active {
-  color: var(--text-primary);
+  color: var(--text-color, #f1f1f1);
+  opacity: 1;
 }
 
 .auth-tab.active::after {
@@ -71,8 +74,9 @@
 }
 
 .auth-tab:hover:not(.active) {
-  color: var(--text-primary);
-  background: var(--hover-bg);
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.8;
+  background: var(--hover-bg, #272727);
 }
 
 /* ===== Form ===== */
@@ -87,13 +91,19 @@
   margin: 0 0 6px;
   font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-color, #f1f1f1);
 }
 
 .auth-subtitle {
-  margin: 0 0 24px;
-  color: var(--text-secondary);
+  margin: 0 0 20px;
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.6;
   font-size: 14px;
+}
+
+.input-group {
+  position: relative;
+  width: 100%;
 }
 
 .auth-form input {
@@ -101,9 +111,9 @@
   padding: 13px 16px;
   margin-bottom: 14px;
   border-radius: 10px;
-  border: 1.5px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  border: 1.5px solid var(--border-color, #3f3f3f);
+  background: var(--input-bg, #121212);
+  color: var(--text-color, #f1f1f1);
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -111,12 +121,58 @@
 }
 
 .auth-form input::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.4;
 }
 
 .auth-form input:focus {
   border-color: #ff0000;
-  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15);
+}
+
+/* ===== Password Toggle ===== */
+.password-group {
+  position: relative;
+}
+
+.password-group input {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 13px;
+  font-size: 16px;
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.6;
+  cursor: pointer;
+  z-index: 2;
+  transition: opacity 0.2s;
+}
+
+.password-toggle:hover {
+  opacity: 0.9;
+}
+
+/* ===== Forgot Link ===== */
+.forgot-link-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.forgot-link {
+  font-size: 13px;
+  color: #ff0000;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.forgot-link:hover {
+  color: #cc0000;
+  text-decoration: underline;
 }
 
 /* ===== Submit Button ===== */
@@ -146,12 +202,82 @@
   transform: translateY(0);
 }
 
+/* ===== Divider ===== */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 18px 0;
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.4;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--border-color, #3f3f3f);
+}
+
+.divider:not(:empty)::before {
+  margin-right: .5em;
+}
+
+.divider:not(:empty)::after {
+  margin-left: .5em;
+}
+
+/* ===== Social Buttons ===== */
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color, #3f3f3f);
+  background: var(--input-bg, #121212);
+  color: var(--text-color, #f1f1f1);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.social-btn:hover {
+  background: var(--hover-bg, #272727);
+  border-color: var(--text-color, #f1f1f1);
+}
+
+.social-icon {
+  font-size: 16px;
+}
+
+.google .social-icon {
+  color: #ea4335;
+}
+
+.facebook .social-icon {
+  color: #1877f2;
+}
+
 /* ===== Switch Text ===== */
 .switch-text {
-  margin-top: 20px;
+  margin-top: 16px;
   text-align: center;
   font-size: 13px;
-  color: var(--text-secondary);
+  color: var(--text-color, #f1f1f1);
+  opacity: 0.6;
 }
 
 .switch-text span {
@@ -164,4 +290,4 @@
 
 .switch-text span:hover {
   color: #cc0000;
-}
+}

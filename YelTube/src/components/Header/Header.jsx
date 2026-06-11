@@ -66,7 +66,7 @@ function Header({
   const triggerSearch = (query) => {
     setSearchQuery(query);
     setShowSuggestions(false);
-    navigate("/");
+    navigate(`/results?search_query=${encodeURIComponent(query)}`);
   };
 
   const handleKeyDown = (e) => {
@@ -250,7 +250,7 @@ function Header({
           <div className="profile-section">
 
             <img
-              src="https://i.pravatar.cc/40"
+              src={localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || currentUser.avatar || "https://i.pravatar.cc/40"}
               alt="Profile"
               className="profile-image"
               onClick={() =>
@@ -258,6 +258,9 @@ function Header({
                   !showProfileMenu
                 )
               }
+              onError={(e) => {
+                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=random&color=fff&bold=true`;
+              }}
             />
             {
               showProfileMenu && (
@@ -294,13 +297,11 @@ function Header({
           </div>
         ) : (
           <div className="auth-buttons">
-            <Link to="/login">
+            <Link to="/login" className="login-btn-link">
               <button title="Login" className="auth-btn">
-                <FaSignInAlt className="auth-icon" /> Login
+                <FaUser className="auth-icon" /> Login
               </button>
             </Link>
-
-
           </div>
         )}
       </div>

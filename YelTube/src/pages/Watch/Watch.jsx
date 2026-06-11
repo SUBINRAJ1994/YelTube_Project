@@ -4,8 +4,33 @@ import "./Watch.css";
 import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList, FaEdit, FaTrash, FaReply, FaFlag, FaCog } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import ShareModal from "../../components/ShareModal/ShareModal";
+import { pushNotification } from "../../utils/notifications";
 
 
+
+const getAvatarSrc = (email, fallbackAvatar) => {
+  if (!email) return fallbackAvatar || "https://i.pravatar.cc/40";
+  const emailKey = email.replace(/[@.]/g, "_");
+  return localStorage.getItem(`profileImage_${emailKey}`) || fallbackAvatar || "https://i.pravatar.cc/40";
+};
+
+const formatRelativeTime = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSecs < 60) return "Just now";
+  if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? "min" : "mins"} ago`;
+  if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? "hour" : "hours"} ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+};
 
 const Watch = () => {
   const { id } = useParams();
@@ -16,232 +41,125 @@ const Watch = () => {
     (item) => video && item.id !== video.id
   );
 
-  const [likes, setLikes] = useState(0);
-  const [dislikes, setDislikes] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+  const [likes, setLikes] = useState(() => {
+    if (!video) return 0;
+    const stored = localStorage.getItem(`video_likes_${video.id}`);
+    if (stored !== null) return parseInt(stored, 10);
+    return video.likes || Math.floor(Math.random() * 200) + 12;
+  });
+
+  const [dislikes, setDislikes] = useState(() => {
+    if (!video) return 0;
+    const stored = localStorage.getItem(`video_dislikes_${video.id}`);
+    if (stored !== null) return parseInt(stored, 10);
+    return video.dislikes || Math.floor(Math.random() * 15) + 2;
+  });
+
+  const [liked, setLiked] = useState(() => {
+    if (!currentUser || !video) return false;
+    return localStorage.getItem(`liked_${currentUser.email}_${video.id}`) === "true";
+  });
+
+  const [disliked, setDisliked] = useState(() => {
+    if (!currentUser || !video) return false;
+    return localStorage.getItem(`disliked_${currentUser.email}_${video.id}`) === "true";
+  });
+
   const [playlists] = useState(
-  JSON.parse(
-    localStorage.getItem("playlists")
-  ) || []
-);
-
-const [selectedPlaylist,
-setSelectedPlaylist] =
-useState("");
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const videoRef = useRef(null);
-  const playerContainerRef = useRef(null);
-
-  const [ccActive, setCcActive] = useState(false);
-  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [resolution, setResolution] = useState("1080p");
-
-  const handleSpeedChange = (speed) => {
-    setPlaybackSpeed(speed);
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed;
-    }
-    setShowSettingsMenu(false);
-  };
-
-  const handleResolutionChange = (res) => {
-    setResolution(res);
-    alert(`Video quality switched to ${res}`);
-    setShowSettingsMenu(false);
-  };
-
-  const getSubtitles = (time) => {
-    if (time < 3) return "Welcome to the YelTube developer session!";
-    if (time >= 3 && time < 8) return "Here we are demonstrating custom playback controls.";
-    if (time >= 8 && time < 14) return "You can toggle closed captions and change video resolution.";
-    if (time >= 14 && time < 20) return "Select playback speeds or quality from the settings cog.";
-    return "Enjoy watching this video in premium player quality!";
-  };
-
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      videoRef.current.play();
-      setIsPlaying(true);
-    }
-  };
-
-  const handleTimeUpdate = (e) => {
-    setCurrentTime(e.target.currentTime);
-    localStorage.setItem(`progress_${video.id}`, e.target.currentTime);
-  };
-
-  const handleLoadedMetadata = (e) => {
-    setDuration(e.target.duration);
-    const progress = localStorage.getItem(`progress_${video.id}`);
-    if (progress) {
-      e.target.currentTime = parseFloat(progress);
-      setCurrentTime(parseFloat(progress));
-    }
-  };
-
-  const handleSeek = (e) => {
-    const time = parseFloat(e.target.value);
-    videoRef.current.currentTime = time;
-    setCurrentTime(time);
-  };
-
-  const handleVolumeChange = (e) => {
-    const vol = parseFloat(e.target.value);
-    setVolume(vol);
-    videoRef.current.volume = vol;
-    setIsMuted(vol === 0);
-  };
-
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    if (isMuted) {
-      videoRef.current.volume = volume;
-      setIsMuted(false);
-    } else {
-      videoRef.current.volume = 0;
-      setIsMuted(true);
-    }
-  };
-
-  const skip = (amount) => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + amount));
-  };
-
-  const toggleFullscreen = () => {
-    if (!playerContainerRef.current) return;
-    if (!document.fullscreenElement) {
-      playerContainerRef.current.requestFullscreen().catch(err => {
-        console.error("Fullscreen error:", err);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const formatTime = (timeInSeconds) => {
-    if (isNaN(timeInSeconds)) return "00:00";
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  };
-
-const handleLike = () => {
-
-  if (!liked) {
-
-    setLikes(likes + 1);
-
-    if (disliked) {
-
-      setDislikes(dislikes - 1);
-
-      setDisliked(false);
-
-    }
-
-    setLiked(true);
-    let likedVideos =
-JSON.parse(
-  localStorage.getItem(
-    "likedVideos"
-  )
-) || [];
-
-const alreadyLiked =
-likedVideos.find(
-  (item) =>
-    item.id === video.id
-);
-
-if (!alreadyLiked) {
-
-  likedVideos.unshift(video);
-
-  localStorage.setItem(
-
-    "likedVideos",
-
-    JSON.stringify(
-      likedVideos
-    )
-
+    JSON.parse(localStorage.getItem("playlists")) || []
   );
 
-}
-  } else {
+  const [selectedPlaylist, setSelectedPlaylist] = useState("");
 
-    setLikes(likes - 1);
-
-    setLiked(false);
-    let likedVideos =
-JSON.parse(
-  localStorage.getItem(
-    "likedVideos"
-  )
-) || [];
-
-likedVideos =
-likedVideos.filter(
-  (item) =>
-    item.id !== video.id
-);
-
-localStorage.setItem(
-
-  "likedVideos",
-
-  JSON.stringify(
-    likedVideos
-  )
-
-);
-
-  }
-
-};
-
-
-const handleDislike = () => {
-
-  if (!disliked) {
-
-    setDislikes(dislikes + 1);
-
-    if (liked) {
-
-      setLikes(likes - 1);
-
-      setLiked(false);
-
+  const handleLike = () => {
+    if (!currentUser) {
+      alert("Please log in to like videos.");
+      return;
     }
 
-    setDisliked(true);
+    let newLikes = likes;
+    let newDislikes = dislikes;
+    let newLiked = !liked;
+    let newDisliked = disliked;
 
-  } else {
+    if (newLiked) {
+      newLikes += 1;
+      localStorage.setItem(`liked_${currentUser.email}_${video.id}`, "true");
+      
+      pushNotification("likes", `You liked the video: "${video.title}"`);
+      
+      if (disliked) {
+        newDislikes = Math.max(0, newDislikes - 1);
+        newDisliked = false;
+        localStorage.setItem(`disliked_${currentUser.email}_${video.id}`, "false");
+      }
+      
+      // Save to liked videos list
+      let likedList = JSON.parse(localStorage.getItem("likedVideos")) || [];
+      if (!likedList.some(item => item.id === video.id)) {
+        likedList.unshift(video);
+        localStorage.setItem("likedVideos", JSON.stringify(likedList));
+      }
+    } else {
+      newLikes = Math.max(0, newLikes - 1);
+      localStorage.setItem(`liked_${currentUser.email}_${video.id}`, "false");
+      
+      let likedList = JSON.parse(localStorage.getItem("likedVideos")) || [];
+      likedList = likedList.filter(item => item.id !== video.id);
+      localStorage.setItem("likedVideos", JSON.stringify(likedList));
+    }
 
-    setDislikes(dislikes - 1);
+    setLikes(newLikes);
+    setDislikes(newDislikes);
+    setLiked(newLiked);
+    setDisliked(newDisliked);
 
-    setDisliked(false);
+    localStorage.setItem(`video_likes_${video.id}`, newLikes);
+    localStorage.setItem(`video_dislikes_${video.id}`, newDislikes);
+  };
 
-  }
+  const handleDislike = () => {
+    if (!currentUser) {
+      alert("Please log in to dislike videos.");
+      return;
+    }
 
-};
+    let newLikes = likes;
+    let newDislikes = dislikes;
+    let newLiked = liked;
+    let newDisliked = !disliked;
+
+    if (newDisliked) {
+      newDislikes += 1;
+      localStorage.setItem(`disliked_${currentUser.email}_${video.id}`, "true");
+      
+      if (liked) {
+        newLikes = Math.max(0, newLikes - 1);
+        newLiked = false;
+        localStorage.setItem(`liked_${currentUser.email}_${video.id}`, "false");
+        
+        let likedList = JSON.parse(localStorage.getItem("likedVideos")) || [];
+        likedList = likedList.filter(item => item.id !== video.id);
+        localStorage.setItem("likedVideos", JSON.stringify(likedList));
+      }
+    } else {
+      newDislikes = Math.max(0, newDislikes - 1);
+      localStorage.setItem(`disliked_${currentUser.email}_${video.id}`, "false");
+    }
+
+    setLikes(newLikes);
+    setDislikes(newDislikes);
+    setLiked(newLiked);
+    setDisliked(newDisliked);
+
+    localStorage.setItem(`video_likes_${video.id}`, newLikes);
+    localStorage.setItem(`video_dislikes_${video.id}`, newDislikes);
+  };
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState("");
   const [replyInputs, setReplyInputs] = useState({});
@@ -258,6 +176,7 @@ const handleDislike = () => {
         {
           id: "c_1",
           author: "Jane Miller",
+          email: "jane@yeltube.com",
           avatar: "https://i.pravatar.cc/40?img=5",
           text: "Very helpful tutorial. Waiting for the next part!",
           likes: 2,
@@ -266,6 +185,7 @@ const handleDislike = () => {
             {
               id: "r_1",
               author: "Code Master",
+              email: "codemaster@yeltube.com",
               text: "Next part is dropping this Friday!",
               createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
             }
@@ -276,6 +196,7 @@ const handleDislike = () => {
         {
           id: "c_2",
           author: "Subin Tech",
+          email: "subin@yeltube.com",
           avatar: "https://i.pravatar.cc/40?img=11",
           text: "Awesome video 🔥 Thanks for the share!",
           likes: 5,
@@ -305,6 +226,7 @@ const handleDislike = () => {
     const newComment = {
       id: "c_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
       author: currentUser ? currentUser.name : "Anonymous",
+      email: currentUser ? currentUser.email : "",
       avatar: avatar,
       text: commentInput,
       likes: 0,
@@ -316,6 +238,14 @@ const handleDislike = () => {
 
     const updated = [newComment, ...comments];
     saveComments(updated);
+    
+    pushNotification("comments", `You commented on "${video.title}": "${commentInput.substring(0, 30)}..."`);
+    
+    // Simulate creator reaction after a short delay
+    setTimeout(() => {
+      pushNotification("likes", `${video.channel} liked your comment on "${video.title}"!`);
+    }, 4000);
+
     setCommentInput("");
   };
 
@@ -360,6 +290,7 @@ const handleDislike = () => {
             {
               id: "r_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
               author: currentUser ? currentUser.name : "Anonymous",
+              email: currentUser ? currentUser.email : "",
               text: text,
               createdAt: new Date().toISOString(),
             }
@@ -606,6 +537,7 @@ const handleSubscribe = () => {
 
     setSubscribed(true);
     setSubscriberCount((prev) => prev + 1);
+    pushNotification("subscriptions", `You subscribed to ${video.channel}!`);
   } else {
     subscriptions = subscriptions.filter(
       (channel) => channel !== video.channel
@@ -618,6 +550,7 @@ const handleSubscribe = () => {
 
     setSubscribed(false);
     setSubscriberCount((prev) => prev - 1);
+    pushNotification("subscriptions", `You unsubscribed from ${video.channel}.`);
   }
 };
   return (
@@ -847,16 +780,16 @@ const handleSubscribe = () => {
           <div className="comments-list">
             {comments.filter(c => !c.reported).map((comment) => {
               const hasLiked = currentUser && comment.likedBy?.includes(currentUser.email);
-              const isOwnComment = currentUser && currentUser.name === comment.author;
+              const isOwnComment = currentUser && comment.email === currentUser.email;
 
               return (
                 <div className="comment-item" key={comment.id}>
-                  <img src={comment.avatar || "https://i.pravatar.cc/40"} alt="" className="comment-avatar" />
+                  <img src={getAvatarSrc(comment.email, comment.avatar)} alt="" className="comment-avatar" />
                   <div className="comment-details">
                     <div className="comment-meta">
                       <strong className="comment-author">{comment.author}</strong>
                       <span className="comment-time">
-                        {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString() : ""}
+                        {formatRelativeTime(comment.createdAt)}
                       </span>
                     </div>
 
@@ -906,14 +839,23 @@ const handleSubscribe = () => {
                       <div className="comment-replies-list">
                         {comment.replies.map((reply) => (
                           <div className="reply-item" key={reply.id}>
-                            <div className="reply-avatar-placeholder">
-                              {reply.author[0].toUpperCase()}
-                            </div>
+                            {reply.email || reply.avatar ? (
+                              <img
+                                src={getAvatarSrc(reply.email, reply.avatar)}
+                                alt=""
+                                className="comment-avatar"
+                                style={{ width: "28px", height: "28px" }}
+                              />
+                            ) : (
+                              <div className="reply-avatar-placeholder">
+                                {reply.author ? reply.author[0].toUpperCase() : "A"}
+                              </div>
+                            )}
                             <div className="reply-details">
                               <div className="reply-meta">
                                 <strong>{reply.author}</strong>
                                 <span className="reply-time">
-                                  {reply.createdAt ? new Date(reply.createdAt).toLocaleDateString() : ""}
+                                  {formatRelativeTime(reply.createdAt)}
                                 </span>
                               </div>
                               <p className="reply-text">{reply.text}</p>

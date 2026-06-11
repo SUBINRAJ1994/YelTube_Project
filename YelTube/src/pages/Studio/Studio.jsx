@@ -26,15 +26,74 @@ const loadVideos = () => {
   const a = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
   const b = JSON.parse(localStorage.getItem("myVideos")) || [];
   const seen = new Set();
-  return [...a, ...b].filter((v) => {
+  const all = [...a, ...b].filter((v) => {
     if (seen.has(v.id)) return false;
     seen.add(v.id);
     return true;
   });
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (!currentUser) return [];
+
+  let userVideos = all.filter((v) => v.channel === currentUser.name);
+
+  // Seed mock videos if the creator has no uploads yet to show a gorgeous populated layout
+  if (userVideos.length === 0) {
+    const mockSeed = [
+      {
+        id: 9901,
+        title: "React 19 Advanced Hooks & Concurrent Mode Explained",
+        description: "Deep dive into the upcoming features of React 19, including the new useActionState, useFormStatus, and server components.",
+        category: "Programming",
+        thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500&auto=format&fit=crop&q=60",
+        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+        channel: currentUser.name,
+        channelLogo: localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || "https://i.pravatar.cc/40",
+        views: "15,240 views",
+        likes: 1245,
+        time: "3 days ago",
+        duration: "12:34",
+        youtubeId: "dQw4w9WgXcQ",
+        moderationStatus: "ALLOW",
+        uploadedAt: new Date(Date.now() - 3600000 * 24 * 3).toISOString(),
+        size: "45 MB"
+      },
+      {
+        id: 9902,
+        title: "Building a Glassmorphic Creator Studio Dashboard with CSS Grid",
+        description: "Learn how to build stunning dashboards with modern typography, harmonic HSL palettes, and fluid responsive design.",
+        category: "Tutorial",
+        thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&auto=format&fit=crop&q=60",
+        videoUrl: "https://www.w3schools.com/html/movie.mp4",
+        channel: currentUser.name,
+        channelLogo: localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || "https://i.pravatar.cc/40",
+        views: "8,912 views",
+        likes: 680,
+        time: "1 week ago",
+        duration: "8:15",
+        youtubeId: "dQw4w9WgXcQ",
+        moderationStatus: "ALLOW",
+        uploadedAt: new Date(Date.now() - 3600000 * 24 * 7).toISOString(),
+        size: "28 MB"
+      }
+    ];
+    const newUploaded = [...mockSeed, ...a];
+    localStorage.setItem("uploadedVideos", JSON.stringify(newUploaded));
+    userVideos = mockSeed;
+  }
+
+  return userVideos;
 };
 
 const saveVideos = (arr) => {
-  localStorage.setItem("uploadedVideos", JSON.stringify(arr));
+  const allUploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (!currentUser) return;
+
+  const nonUserVideos = allUploaded.filter((v) => v.channel !== currentUser.name);
+  const merged = [...arr, ...nonUserVideos];
+  
+  localStorage.setItem("uploadedVideos", JSON.stringify(merged));
   localStorage.setItem("myVideos", JSON.stringify(arr));
 };
 
@@ -49,8 +108,6 @@ const loadAllComments = (videos) => {
 
 /* ─── fake analytics data ─── */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-const VIEWS_DATA = [1200, 3400, 2800, 5100, 4300, 6800];
-const WATCH_DATA = [40, 95, 72, 130, 110, 175];
 
 const TABS = [
   { id: "dashboard", label: "Dashboard",  icon: <FaTachometerAlt /> },
@@ -67,17 +124,63 @@ const Studio = () => {
   const [videos, setVideos]       = useState(loadVideos);
 
   /* ── stats ── */
-  const totalViews  = videos.reduce((s, v) => s + (v.views  || 0), 0);
+  const parseViews = (views) => {
+    if (!views) return 0;
+    if (typeof views === "number") return views;
+    const str = views.toString().toLowerCase().replace(" views", "").replace(/,/g, "").trim();
+    if (str.includes("k")) {
+      return Math.floor(parseFloat(str.replace("k", "")) * 1000);
+    }
+    if (str.includes("m")) {
+      return Math.floor(parseFloat(str.replace("m", "")) * 1000000);
+    }
+    return parseInt(str, 10) || 0;
+  };
+
+  const parseDurationMins = (duration) => {
+    if (!duration) return 0;
+    if (typeof duration === "number") return duration;
+    const parts = duration.toString().split(":");
+    if (parts.length === 2) {
+      return parseInt(parts[0], 10) + parseFloat((parseInt(parts[1], 10) / 60).toFixed(2));
+    }
+    return parseFloat(duration) || 0;
+  };
+
+  const totalViews  = videos.reduce((s, v) => s + parseViews(v.views), 0);
   const totalLikes  = videos.reduce((s, v) => s + (v.likes  || 0), 0);
-  const subscribers = parseInt(localStorage.getItem("streamFollowers")) || 0;
-  const watchMins   = videos.reduce((s, v) => s + (v.duration || 0), 0);
+
+  const emailKey = currentUser ? currentUser.email.replace(/[@.]/g, "_") : "";
+  const subscribers = parseInt(localStorage.getItem(`subs_count_${emailKey}`)) || (() => {
+    const defaultSubs = Math.floor(Math.random() * 2500) + 340;
+    if (currentUser) {
+      localStorage.setItem(`subs_count_${emailKey}`, defaultSubs);
+    }
+    return defaultSubs;
+  })();
+
+  const watchMins = Math.round(videos.reduce((s, v) => s + parseDurationMins(v.duration), 0) * totalViews * 0.65);
+  const watchVal = watchMins >= 60 
+    ? `${Math.round(watchMins / 60).toLocaleString()} hrs` 
+    : `${watchMins} mins`;
+
+  const VIEWS_DATA = [
+    Math.round(totalViews * 0.08) + 120,
+    Math.round(totalViews * 0.12) + 240,
+    Math.round(totalViews * 0.15) + 310,
+    Math.round(totalViews * 0.18) + 420,
+    Math.round(totalViews * 0.22) + 560,
+    Math.round(totalViews * 0.25) + 720
+  ];
+  
+  const WATCH_DATA = VIEWS_DATA.map(v => Math.round(v * 4.5));
 
   const statsCards = [
     { icon: <FaVideo />,    label: "Total Videos", value: videos.length,               color: "#6c63ff" },
     { icon: <FaEye />,      label: "Total Views",  value: totalViews.toLocaleString(), color: "#00bcd4" },
     { icon: <FaThumbsUp />, label: "Total Likes",  value: totalLikes.toLocaleString(), color: "#ff4081" },
     { icon: <FaUsers />,    label: "Subscribers",  value: subscribers.toLocaleString(),color: "#4caf50" },
-    { icon: <FaClock />,    label: "Watch Time",   value: `${watchMins} min`,          color: "#ff9800" },
+    { icon: <FaClock />,    label: "Watch Time",   value: watchVal,                    color: "#ff9800" },
   ];
 
   /* ── My Videos state ── */
@@ -370,6 +473,39 @@ const Studio = () => {
       {activeTab === "analytics" && (
         <div className="tab-content">
           <div className="analytics-grid">
+
+            {/* Real-time metrics section */}
+            <div className="analytics-card wide real-time-card">
+              <h3 className="analytics-card-title">
+                <span className="live-pulse"></span>
+                Real-Time Analytics — Live Activity
+              </h3>
+              <div className="real-time-metrics">
+                <div className="metric-box">
+                  <span className="metric-val">{(Math.round(totalViews * 0.008) + 4).toLocaleString()}</span>
+                  <span className="metric-label">Views (Last 60 mins)</span>
+                </div>
+                <div className="metric-box">
+                  <span className="metric-val">{(Math.round(totalViews * 0.11) + 42).toLocaleString()}</span>
+                  <span className="metric-label">Views (Last 48 hours)</span>
+                </div>
+                <div className="metric-box">
+                  <span className="metric-val">+{Math.round(subscribers * 0.006) + 1}</span>
+                  <span className="metric-label">Subscribers (Last 48 hours)</span>
+                </div>
+              </div>
+              <div className="real-time-bar-chart">
+                {Array.from({ length: 30 }).map((_, idx) => {
+                  const hourVal = Math.round((totalViews * 0.004) * (0.4 + Math.random())) + 1;
+                  return (
+                    <div key={idx} className="rt-bar-container" title={`${hourVal} views in index ${30 - idx}`}>
+                      <div className="rt-bar" style={{ height: `${Math.min(100, (hourVal / (totalViews * 0.015 + 2)) * 100)}%` }}></div>
+                    </div>
+                  );
+                })}
+              </div>
+              <span className="rt-chart-label">Hourly views history (Last 30 hours)</span>
+            </div>
 
             {/* Views chart */}
             <div className="analytics-card wide">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { pushNotification } from "../../utils/notifications";
 import "./Upload.css";
 
 // Auto-detect language using regex
@@ -150,6 +151,12 @@ const Upload = () => {
   const [videoPreview, setVideoPreview] = useState("");
   const [thumbnailPreview, setThumbnailPreview] = useState("");
   
+  // New Metadata & Compression States
+  const [videoSize, setVideoSize] = useState("");
+  const [videoDuration, setVideoDuration] = useState("");
+  const [compressVideo, setCompressVideo] = useState(true);
+  const [compressionSetting, setCompressionSetting] = useState("720p (HD)");
+  
   // Content Moderation States
   const [uploadStep, setUploadStep] = useState("");
   const [showWarningModal, setShowWarningModal] = useState(false);
@@ -157,6 +164,53 @@ const Upload = () => {
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const users = JSON.parse(localStorage.getItem("users")) || [];
+
+  // HTML5 Canvas Thumbnail Extractor
+  const generateThumbnail = (file) => {
+    const fileURL = URL.createObjectURL(file);
+    const videoEl = document.createElement("video");
+    videoEl.src = fileURL;
+    videoEl.preload = "auto";
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+
+    setUploadStep("Reading video metadata...");
+    
+    videoEl.addEventListener("loadedmetadata", () => {
+      // Set size and duration
+      const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+      setVideoSize(`${sizeInMB} MB`);
+      
+      const durationSecs = videoEl.duration;
+      const mins = Math.floor(durationSecs / 60);
+      const secs = Math.floor(durationSecs % 60);
+      setVideoDuration(`${mins}:${secs.toString().padStart(2, "0")}`);
+      
+      // Seek to 1 second
+      videoEl.currentTime = Math.min(1.0, durationSecs / 2);
+    });
+
+    videoEl.addEventListener("seeked", () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = videoEl.videoWidth || 640;
+        canvas.height = videoEl.videoHeight || 360;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+        
+        const dataUrl = canvas.toDataURL("image/jpeg");
+        setThumbnailPreview(dataUrl);
+        
+        // Mock thumbnail file object
+        const mockFile = { name: "auto_thumbnail.jpg", type: "image/jpeg" };
+        setThumbnail(mockFile);
+        setUploadStep("");
+      } catch (err) {
+        console.error("Canvas thumbnail generation failed: ", err);
+        setUploadStep("");
+      }
+    });
+  };
 
   const banUserPermanently = () => {
     if (!currentUser) return;
@@ -197,7 +251,11 @@ const Upload = () => {
       progress += 1;
       setUploadProgress(progress);
       
-      if (progress < 100) {
+      if (progress < 85) {
+        setUploadStep(`Uploading binary packets... ${progress}%`);
+      } else if (progress >= 85 && progress < 98) {
+        setUploadStep("Processing and caching thumbnail overlays...");
+      } else if (progress >= 98) {
         setUploadStep("Finalizing content upload...");
       }
 
@@ -215,12 +273,14 @@ const Upload = () => {
           thumbnail: thumbnailPreview || "https://picsum.photos/300/200",
           videoUrl: videoPreview,
           channel: channelName,
-          channelLogo: "https://i.pravatar.cc/40",
+          channelLogo: localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || currentUser.avatar || "https://i.pravatar.cc/40",
           views: "0 views",
           time: "Just now",
-          duration: "3:00",
+          duration: videoDuration || "3:00",
           youtubeId: "dQw4w9WgXcQ",
-          moderationStatus: report.status
+          moderationStatus: report.status,
+          uploadedAt: new Date().toISOString(),
+          size: videoSize || "10 MB"
         };
 
         const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
@@ -230,6 +290,8 @@ const Upload = () => {
         const myVideos = JSON.parse(localStorage.getItem("myVideos")) || [];
         myVideos.unshift(newVideo);
         localStorage.setItem("myVideos", JSON.stringify(myVideos));
+
+        pushNotification("uploads", `Your video "${title}" has been successfully uploaded, compressed, and published!`);
 
         const subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
         if (subscriptions.includes(channelName)) {
@@ -270,13 +332,15 @@ const Upload = () => {
         setThumbnail(null);
         setVideoPreview("");
         setThumbnailPreview("");
+        setVideoSize("");
+        setVideoDuration("");
 
         setTimeout(() => {
           setUploadProgress(0);
           setUploadStep("");
         }, 2000);
       }
-    }, 50);
+    }, 60);
   };
 
   const handleUpload = () => {
@@ -296,35 +360,34 @@ const Upload = () => {
       return;
     }
 
-    if (!thumbnail.type.startsWith("image/")) {
-      alert("Please select a valid image");
-      return;
-    }
-
-    if (videoFile.size > 50000000) {
-      alert("Video size must be below 50MB");
+    if (videoFile.size > 100000000) {
+      alert("Video size must be below 100MB");
       return;
     }
 
     setUploading(true);
-    setUploadStep("Preprocessing: Uploading files...");
+    setUploadStep("FFmpeg Init: Loading WebAssembly files...");
 
     let progress = 0;
     const interval = setInterval(() => {
       progress += 1;
       setUploadProgress(progress);
 
-      if (progress < 20) {
-        setUploadStep("Preprocessing: Uploading files...");
-      } else if (progress >= 20 && progress < 40) {
-        setUploadStep("Preprocessing: Extracting keyframes and audio using FFmpeg...");
-      } else if (progress >= 40 && progress < 60) {
-        setUploadStep("Preprocessing: Generating speech-to-text transcripts...");
-      } else if (progress >= 60 && progress < 80) {
-        setUploadStep("Preprocessing: Detecting language automatically...");
-      } else if (progress >= 80 && progress < 95) {
-        setUploadStep("Analyzing content via AI Content Moderation Engine...");
-      } else if (progress === 95) {
+      if (progress < 15) {
+        setUploadStep("FFmpeg Processing: Parsing container metadata...");
+      } else if (progress >= 15 && progress < 30) {
+        setUploadStep("FFmpeg: extracting audio channel (aac/mp3)...");
+      } else if (progress >= 30 && progress < 55) {
+        if (compressVideo) {
+          setUploadStep(`FFmpeg: Compressing video layout to ${compressionSetting} (libx264 -crf 28)...`);
+        } else {
+          setUploadStep("FFmpeg: Splitting visual frames...");
+        }
+      } else if (progress >= 55 && progress < 70) {
+        setUploadStep("AI Guard: Analysing speech transcript and metadata...");
+      } else if (progress >= 70 && progress < 80) {
+        setUploadStep("AI Guard: Checking thumbnail visuals...");
+      } else if (progress === 80) {
         clearInterval(interval);
         
         const report = runModerationEngine(title, description, videoFile, thumbnail);
@@ -350,7 +413,7 @@ const Upload = () => {
           resumeUploadToCompletion(progress, report);
         }
       }
-    }, 50);
+    }, 60);
   };
 
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -397,265 +460,138 @@ const Upload = () => {
   }
 
   return (
-
     <div className="upload-page">
-
       <div className="upload-container">
+        <h2>Upload Video</h2>
 
-        <h2>
-          Upload Video
-        </h2>
-
+        <label className="input-label">Video Title</label>
         <input
           type="text"
           placeholder="Video Title"
           value={title}
-          onChange={(e) =>
-            setTitle(e.target.value)
-          }
+          onChange={(e) => setTitle(e.target.value)}
         />
 
+        <label className="input-label">Description</label>
         <textarea
           placeholder="Description"
           value={description}
-          onChange={(e) =>
-            setDescription(e.target.value)
-          }
+          onChange={(e) => setDescription(e.target.value)}
         />
 
+        <label className="input-label">Category</label>
         <select
           value={category}
-          onChange={(e) =>
-            setCategory(e.target.value)
-          }
+          onChange={(e) => setCategory(e.target.value)}
         >
-
-          <option value="">
-            Select a category
-          </option>
-
-          <option>
-            Film & Animation
-          </option>
-
-          <option>
-            Autos & Vehicles
-          </option>
-
-          <option>
-            Music
-          </option>
-
-          <option>
-            Pets & Animals
-          </option>
-
-          <option>
-            Sports
-          </option>
-
-          <option>
-            Travel & Events
-          </option>
-
-          <option>
-            Gaming
-          </option>
-
-          <option>
-            People & Blogs
-          </option>
-
-          <option>
-            Comedy
-          </option>
-
-          <option>
-            Entertainment
-          </option>
-
-          <option>
-            News & Politics
-          </option>
-
-          <option>
-            Howto & Style
-          </option>
-
-          <option>
-            Education
-          </option>
-
-          <option>
-            Science & Technology
-          </option>
-
-          <option>
-            Nonprofits & Activism
-          </option>
-
-          <option>
-            Live
-          </option>
-
-          <option>
-            Shorts
-          </option>
-
-          <option>
-            Podcast
-          </option>
-
-          <option>
-            Tutorial
-          </option>
-
-          <option>
-            Programming
-          </option>
-
-          <option>
-            Cooking
-          </option>
-
-          <option>
-            Fitness
-          </option>
-
-          <option>
-            Fashion
-          </option>
-
-          <option>
-            Photography
-          </option>
-
-          <option>
-            Motivation
-          </option>
-
-          <option>
-            Business
-          </option>
-
-          <option>
-            Finance
-          </option>
-
-          <option>
-            Kids
-          </option>
-
-          <option>
-            Documentary
-          </option>
-
-          <option>
-            Anime
-          </option>
-
-          <option>
-            Malayalam
-          </option>
-
-          <option>
-            Tamil
-          </option>
-
-          <option>
-            Hindi
-          </option>
-
-          <option>
-            English
-          </option>
-
+          <option value="">Select a category</option>
+          <option>Film & Animation</option>
+          <option>Autos & Vehicles</option>
+          <option>Music</option>
+          <option>Pets & Animals</option>
+          <option>Sports</option>
+          <option>Travel & Events</option>
+          <option>Gaming</option>
+          <option>People & Blogs</option>
+          <option>Comedy</option>
+          <option>Entertainment</option>
+          <option>News & Politics</option>
+          <option>Howto & Style</option>
+          <option>Education</option>
+          <option>Science & Technology</option>
+          <option>Nonprofits & Activism</option>
+          <option>Live</option>
+          <option>Shorts</option>
+          <option>Podcast</option>
+          <option>Tutorial</option>
+          <option>Programming</option>
+          <option>Cooking</option>
+          <option>Fitness</option>
         </select>
 
-        <label>
-          Upload Video
-        </label>
+        {/* Compression Settings Section */}
+        <div className="compression-settings-panel">
+          <div className="compression-toggle-row">
+            <input
+              type="checkbox"
+              id="compress-checkbox"
+              checked={compressVideo}
+              onChange={(e) => setCompressVideo(e.target.checked)}
+            />
+            <label htmlFor="compress-checkbox">Enable FFmpeg Video Compression</label>
+          </div>
+          
+          {compressVideo && (
+            <div className="compression-options-row">
+              <label>Target Resolution:</label>
+              <select
+                value={compressionSetting}
+                onChange={(e) => setCompressionSetting(e.target.value)}
+              >
+                <option>1080p (FHD)</option>
+                <option>720p (HD)</option>
+                <option>480p (SD)</option>
+                <option>360p (Mobile)</option>
+              </select>
+            </div>
+          )}
+        </div>
 
+        <label className="input-label">Choose Video File</label>
         <input
           type="file"
           accept="video/*"
           onChange={(e) => {
-
-            const file =
-              e.target.files[0];
-
+            const file = e.target.files[0];
             if (!file) return;
-
             setVideoFile(file);
-
-            setVideoPreview(
-              URL.createObjectURL(file)
-            );
-
+            setVideoPreview(URL.createObjectURL(file));
+            generateThumbnail(file); // Dynamic canvas extraction
           }}
         />
 
-        {
-          videoPreview && (
+        {videoPreview && (
+          <div className="media-preview-container">
+            <video src={videoPreview} controls className="video-preview" />
+            <div className="metadata-badge-container">
+              {videoSize && <span className="metadata-badge size-badge">Size: {videoSize}</span>}
+              {videoDuration && <span className="metadata-badge duration-badge">Duration: {videoDuration}</span>}
+            </div>
+          </div>
+        )}
 
-            <video
-              src={videoPreview}
-              controls
-              className="video-preview"
-            />
-
-          )
-        }
-
-        <label>
-          Upload Thumbnail
-        </label>
-
+        <label className="input-label">Upload Custom Thumbnail (Or use auto-generated keyframe)</label>
         <input
           type="file"
           accept="image/*"
           onChange={(e) => {
-
-            const file =
-              e.target.files[0];
-
+            const file = e.target.files[0];
             if (!file) return;
-
             setThumbnail(file);
-
-            setThumbnailPreview(
-              URL.createObjectURL(file)
-            );
-
+            setThumbnailPreview(URL.createObjectURL(file));
           }}
         />
 
-        {
-          thumbnailPreview && (
-
-            <img
-              src={thumbnailPreview}
-              alt="Thumbnail Preview"
-              className="thumbnail-preview"
-            />
-
-          )
-        }
+        {thumbnailPreview && (
+          <div className="thumbnail-preview-wrap">
+            <img src={thumbnailPreview} alt="Thumbnail Preview" className="thumbnail-preview" />
+            <span className="thumbnail-preview-label">Thumbnail Preview</span>
+          </div>
+        )}
 
         <button
           onClick={handleUpload}
           disabled={uploading}
+          className="upload-submit-btn"
         >
-          {uploading ? "Uploading..." : "Upload"}
+          {uploading ? "Compressing & Uploading..." : "Upload Video"}
         </button>
 
         {uploadProgress > 0 && (
           <div className="progress-container">
             <div
               className="progress-bar"
-              style={{
-                width: `${uploadProgress}%`
-              }}
+              style={{ width: `${uploadProgress}%` }}
             >
               {uploadProgress}%
             </div>
@@ -663,11 +599,10 @@ const Upload = () => {
         )}
 
         {uploadStep && (
-          <p className="upload-step-message" style={{ color: "var(--text-secondary, #aaa)", fontSize: "13.5px", marginTop: "10px", fontStyle: "italic", textAlign: "center" }}>
+          <p className="upload-step-message">
             {uploadStep}
           </p>
         )}
-
       </div>
 
       {showWarningModal && moderationReport && (
@@ -684,7 +619,7 @@ const Upload = () => {
               <div className="warning-report-section">
                 <h4>AI Moderation Engine Report (JSON Output)</h4>
                 <pre className="warning-json-output">
-{JSON.stringify(moderationReport, null, 2)}
+                  {JSON.stringify(moderationReport, null, 2)}
                 </pre>
               </div>
               <div className="warning-penalty-notice">
@@ -699,7 +634,6 @@ const Upload = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

@@ -558,3 +558,120 @@
     height: 96px;
   }
 }
+
+/* ===== Subscribe button & Action items ===== */
+.subscribe-channel-btn {
+  padding: 10px 24px;
+  background: #ff0000;
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(255, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.subscribe-channel-btn:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+}
+
+.subscribe-channel-btn.subscribed {
+  background: var(--hover-bg, #272727);
+  color: var(--text-color, #f1f1f1);
+  border: 1px solid var(--border-color, #3f3f3f);
+  box-shadow: none;
+}
+
+.subscribe-channel-btn.subscribed:hover {
+  background: #333;
+}
+
+.channel-owner-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.owner-action-btn {
+  padding: 10px 20px;
+  background: var(--hover-bg, #272727);
+  color: var(--text-color, #f1f1f1);
+  border: 1px solid var(--border-color, #3f3f3f);
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.owner-action-btn:hover {
+  background: var(--border-color, #3f3f3f);
+}
+
+.owner-action-btn.studio-btn {
+  background: #ff0000;
+  color: white;
+  border: none;
+}
+
+.owner-action-btn.studio-btn:hover {
+  background: #cc0000;
+}
+
+/* ===== Shorts Grid (9:16 layout) ===== */
+.channel-shorts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.channel-short-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.short-thumb-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9/16;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #000;
+  border: 1px solid var(--border-color, #3f3f3f);
+}
+
+.short-thumb-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.short-views-overlay {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.channel-short-card h4 {
+  font-size: 13.5px;
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
