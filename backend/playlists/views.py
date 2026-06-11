@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -80,3 +81,8 @@ class SearchPlaylistsView(generics.ListAPIView):
             return Playlist.objects.none()
         return Playlist.objects.filter(title__icontains=query, is_private=False).order_by("-updated_at")
 
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

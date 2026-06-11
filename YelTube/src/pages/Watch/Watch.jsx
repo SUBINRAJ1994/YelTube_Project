@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 import { useParams, Link } from "react-router-dom";
+=======
+import { useParams, Link, useNavigate } from "react-router-dom";
+import videos from "../../data/videos";
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 import "./Watch.css";
 import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList, FaEdit, FaTrash, FaReply, FaFlag, FaCog } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
@@ -37,9 +42,20 @@ const formatRelativeTime = (dateString) => {
 
 const Watch = () => {
   const { id } = useParams();
+<<<<<<< HEAD
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [relatedVideos, setRelatedVideos] = useState([]);
+=======
+  const navigate = useNavigate();
+  const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+  const allVideos = [...uploadedVideos, ...videos];
+  const video = allVideos.find((v) => v.id === parseInt(id, 10));
+  const relatedVideos = allVideos.filter(
+    (item) => video && item.id !== video.id
+  );
+
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
   const [liked, setLiked] = useState(false);
@@ -156,6 +172,124 @@ const Watch = () => {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
+<<<<<<< HEAD
+=======
+const handleLike = () => {
+  if (!currentUser) {
+    alert("Please login to like this video.");
+    navigate("/login");
+    return;
+  }
+
+  if (!liked) {
+
+    setLikes(likes + 1);
+
+    if (disliked) {
+
+      setDislikes(dislikes - 1);
+
+      setDisliked(false);
+
+    }
+
+    setLiked(true);
+    let likedVideos =
+JSON.parse(
+  localStorage.getItem(
+    "likedVideos"
+  )
+) || [];
+
+const alreadyLiked =
+likedVideos.find(
+  (item) =>
+    item.id === video.id
+);
+
+if (!alreadyLiked) {
+
+  likedVideos.unshift(video);
+
+  localStorage.setItem(
+
+    "likedVideos",
+
+    JSON.stringify(
+      likedVideos
+    )
+
+  );
+
+}
+  } else {
+
+    setLikes(likes - 1);
+
+    setLiked(false);
+    let likedVideos =
+JSON.parse(
+  localStorage.getItem(
+    "likedVideos"
+  )
+) || [];
+
+likedVideos =
+likedVideos.filter(
+  (item) =>
+    item.id !== video.id
+);
+
+localStorage.setItem(
+
+  "likedVideos",
+
+  JSON.stringify(
+    likedVideos
+  )
+
+);
+
+  }
+
+};
+
+
+const handleDislike = () => {
+  if (!currentUser) {
+    alert("Please login to dislike this video.");
+    navigate("/login");
+    return;
+  }
+
+  if (!disliked) {
+
+    setDislikes(dislikes + 1);
+
+    if (liked) {
+
+      setLikes(likes - 1);
+
+      setLiked(false);
+
+    }
+
+    setDisliked(true);
+
+  } else {
+
+    setDislikes(dislikes - 1);
+
+    setDisliked(false);
+
+  }
+
+};
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState("");
   const [replyInputs, setReplyInputs] = useState({});
@@ -223,6 +357,7 @@ const Watch = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleDislike = async () => {
     if (!currentUser) {
       alert("Please log in to dislike videos.");
@@ -238,6 +373,30 @@ const Watch = () => {
       console.error(err);
     }
   };
+=======
+  const addComment = () => {
+    if (!currentUser) {
+      alert("Please login to write comments.");
+      navigate("/login");
+      return;
+    }
+    if (commentInput.trim() === "") return;
+    
+    const emailKey = currentUser ? currentUser.email.replace(/[@.]/g, "_") : "";
+    const avatar = currentUser ? (localStorage.getItem(`profileImage_${emailKey}`) || "https://i.pravatar.cc/40") : "https://i.pravatar.cc/40";
+    
+    const newComment = {
+      id: "c_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+      author: currentUser ? currentUser.name : "Anonymous",
+      avatar: avatar,
+      text: commentInput,
+      likes: 0,
+      likedBy: [],
+      replies: [],
+      createdAt: new Date().toISOString(),
+      reported: false
+    };
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
   const addComment = async () => {
     if (commentInput.trim() === "") return;
@@ -253,7 +412,17 @@ const Watch = () => {
   };
 
   const handleLikeComment = (commentId) => {
+<<<<<<< HEAD
     setComments(comments.map((c) => {
+=======
+    if (!currentUser) {
+      alert("Please login to like comments.");
+      navigate("/login");
+      return;
+    }
+    const email = currentUser.email;
+    const updated = comments.map((c) => {
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
       if (c.id === commentId) {
         const likedBy = c.likedBy || [];
         const email = currentUser?.email || "anon";
@@ -276,6 +445,11 @@ const Watch = () => {
   };
 
   const handlePostReply = (commentId) => {
+    if (!currentUser) {
+      alert("Please login to reply to comments.");
+      navigate("/login");
+      return;
+    }
     const text = replyInputs[commentId] || "";
     if (!text.trim()) return;
 
@@ -328,7 +502,16 @@ const Watch = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleReportComment = async (comment) => {
+=======
+  const handleReportComment = (comment) => {
+    if (!currentUser) {
+      alert("Please login to report comments.");
+      navigate("/login");
+      return;
+    }
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
     if (!window.confirm("Report this comment for spam or abuse?")) return;
     try {
       await API.post("reports/add/", {
@@ -434,6 +617,7 @@ const Watch = () => {
       </div>
     );
   }
+<<<<<<< HEAD
   const handleWatchLater = async () => {
     if (!currentUser) {
       alert("Please log in to use Watch Later.");
@@ -447,15 +631,117 @@ const Watch = () => {
     }
   };
 
+=======
+const handleWatchLater = () => {
+  if (!currentUser) {
+    alert("Please login to save videos to Watch Later.");
+    navigate("/login");
+    return;
+  }
+  let watchLater = JSON.parse(localStorage.getItem("watchLater")) || [];
+  const alreadyExists = watchLater.some((item) => item.id === video.id);
+  if (alreadyExists){
+    alert("Already added to Watch Later");
+    return;
+  }
+  watchLater.unshift(video);
+  localStorage.setItem("watchLater", JSON.stringify(watchLater));
+  alert("Added to Watch Later");
+}
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
   const [showShareModal, setShowShareModal] = useState(false);
   const handleShare = () => {
     setShowShareModal(true);
   };
+<<<<<<< HEAD
 
   const addToPlaylist = async () => {
     if (!selectedPlaylist) {
       alert("Select a Playlist");
       return;
+=======
+const addToPlaylist = () => {
+  if (!currentUser) {
+    alert("Please login to add videos to playlists.");
+    navigate("/login");
+    return;
+  }
+
+  if (!selectedPlaylist) {
+
+    alert("Select a Playlist");
+
+    return;
+
+  }
+
+  let allPlaylists =
+    JSON.parse(
+      localStorage.getItem(
+        "playlists"
+      )
+    ) || [];
+
+  allPlaylists =
+    allPlaylists.map(
+      (playlist) => {
+
+        if (
+          playlist.id ===
+          Number(selectedPlaylist)
+        ) {
+
+          const exists =
+            playlist.videos.some(
+              (item) =>
+                item.id === video.id
+            );
+
+          if (!exists) {
+            playlist.videos.push(video);
+          } else {
+            alert("Video already in playlist");
+          }
+
+        }
+
+        return playlist;
+
+      }
+    );
+
+  localStorage.setItem(
+    "playlists",
+    JSON.stringify(
+      allPlaylists
+    )
+  );
+
+  alert(
+    "Added to Playlist"
+  );
+
+};
+const handleSubscribe = () => {
+  if (!currentUser) {
+    alert("Please login to subscribe to channels.");
+    navigate("/login");
+    return;
+  }
+  let subscriptions =
+    JSON.parse(
+      localStorage.getItem("subscriptions")
+    ) || [];
+
+  if (!subscribed) {
+    if (!subscriptions.includes(video.channel)) {
+      subscriptions.push(video.channel);
+
+      localStorage.setItem(
+        "subscriptions",
+        JSON.stringify(subscriptions)
+      );
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
     }
     try {
       await playlistService.addVideoToPlaylist(selectedPlaylist, video.id);

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -88,3 +89,8 @@ class StudioProfileUpdateView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

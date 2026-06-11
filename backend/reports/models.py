@@ -1,4 +1,5 @@
 from django.db import models
+<<<<<<< HEAD
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -29,3 +30,7 @@ class Report(models.Model):
 
     def __str__(self):
         return f"Report {self.id} by {self.reporter.username} - {self.content_type} ({self.status})"
+=======
+
+# Create your models here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

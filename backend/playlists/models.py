@@ -1,4 +1,5 @@
 from django.db import models
+<<<<<<< HEAD
 from django.contrib.auth import get_user_model
 from videos.models import Video
 
@@ -27,3 +28,7 @@ class PlaylistVideo(models.Model):
 
     def __str__(self):
         return f"{self.playlist.title} - Video: {self.video.title}"
+=======
+
+# Create your models here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

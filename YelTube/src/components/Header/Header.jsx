@@ -67,7 +67,11 @@ function Header({
   const triggerSearch = (query) => {
     setSearchQuery(query);
     setShowSuggestions(false);
+<<<<<<< HEAD
     navigate(`/results?search_query=${encodeURIComponent(query)}`);
+=======
+    navigate(`/search?q=${encodeURIComponent(query)}`);
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
   };
 
   const handleKeyDown = (e) => {
@@ -263,7 +267,15 @@ function Header({
           <div className="profile-section">
 
             <img
+<<<<<<< HEAD
               src={localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || currentUser.avatar || "https://i.pravatar.cc/40"}
+=======
+              src={
+                localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) ||
+                currentUser.avatar ||
+                "https://i.pravatar.cc/40"
+              }
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
               alt="Profile"
               className="profile-image"
               onClick={() =>

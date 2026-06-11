@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -33,3 +34,8 @@ class NotificationDeleteView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return Notification.objects.filter(receiver=self.request.user)
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

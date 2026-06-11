@@ -1,7 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import "./Login.css";
+<<<<<<< HEAD
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebook } from "react-icons/fa";
 import authService from "../../services/authService";
+=======
+import { FaEye, FaEyeSlash, FaCamera, FaGoogle, FaFacebook } from "react-icons/fa";
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
 const Login = () => {
   const [mode, setMode] = useState("login"); // "login", "signup", or "forgot"
@@ -10,8 +14,11 @@ const Login = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
   // Sign Up state
   const [signupName, setSignupName] = useState("");
@@ -19,8 +26,31 @@ const Login = () => {
   const [signupDateOfBirth, setSignupDateOfBirth] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
+<<<<<<< HEAD
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showSignupConfirm, setShowSignupConfirm] = useState(false);
+=======
+  const [signupAvatar, setSignupAvatar] = useState("");
+  const [signupDob, setSignupDob] = useState("");
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  const validateEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setSignupAvatar(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
   // Forgot Password state
   const [forgotEmail, setForgotEmail] = useState("");
@@ -41,12 +71,30 @@ const Login = () => {
       alert("Please fill all fields");
       return;
     }
+<<<<<<< HEAD
     if (!isValidEmail(loginEmail)) {
       alert("Please enter a valid email address.");
       return;
     }
     try {
       await authService.login(loginEmail, loginPassword);
+=======
+    if (!validateEmail(loginEmail)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    const savedUser = users.find((u) => u.email === loginEmail && u.password === loginPassword);
+
+    if (savedUser) {
+      if (savedUser.banned) {
+        alert("This account has been banned by the administrator.");
+        return;
+      }
+      localStorage.setItem("currentUser", JSON.stringify(savedUser));
+      localStorage.setItem("isLoggedIn", "true");
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
       alert("Login successful!");
       window.location.href = "/";
     } catch (err) {
@@ -54,6 +102,7 @@ const Login = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleSignup = async () => {
     if (!signupName || !signupEmail || !signupPassword || !signupConfirm || !signupDateOfBirth) {
       alert("Please fill all fields, including Date of Birth.");
@@ -61,6 +110,15 @@ const Login = () => {
     }
     if (!isValidEmail(signupEmail)) {
       alert("Please enter a valid email address.");
+=======
+  const handleSignup = () => {
+    if (!signupName || !signupEmail || !signupPassword || !signupConfirm || !signupDob) {
+      alert("Please fill all fields, including Date of Birth");
+      return;
+    }
+    if (!validateEmail(signupEmail)) {
+      alert("Please enter a valid email address");
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
       return;
     }
     if (signupPassword.length < 6) {
@@ -71,6 +129,7 @@ const Login = () => {
       alert("Passwords do not match");
       return;
     }
+<<<<<<< HEAD
     try {
       await authService.register(signupName, signupEmail, signupPassword, signupDateOfBirth);
       alert("Account created successfully! Please log in.");
@@ -84,6 +143,24 @@ const Login = () => {
   const handleSendResetCode = async () => {
     if (!forgotEmail) {
       alert("Please enter your email");
+=======
+
+    const emailKey = signupEmail.replace(/[@.]/g, "_");
+    const avatarToSave = signupAvatar || `https://i.pravatar.cc/150?u=${signupEmail}`;
+
+    const newUser = {
+      name: signupName,
+      email: signupEmail,
+      password: signupPassword,
+      avatar: avatarToSave,
+      dob: signupDob,
+      banned: false,
+    };
+    
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    if (users.some((u) => u.email === signupEmail)) {
+      alert("Email already registered!");
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
       return;
     }
     if (!isValidEmail(forgotEmail)) {
@@ -99,6 +176,7 @@ const Login = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleVerifyCode = () => {
     if (resetCode) {
       setForgotStep("reset");
@@ -147,6 +225,31 @@ const Login = () => {
     } catch (err) {
       alert(`Error logging in with ${provider}: ${err.response?.data?.error || "OAuth failed"}`);
     }
+=======
+    // Save avatar specifically
+    localStorage.setItem(`profileImage_${emailKey}`, avatarToSave);
+    localStorage.setItem(`profileImage_${signupEmail}`, avatarToSave);
+
+    localStorage.setItem("yeltubeUser", JSON.stringify(newUser));
+    localStorage.setItem("currentUser", JSON.stringify(newUser));
+    localStorage.setItem("isLoggedIn", "true");
+    alert("Account created! Welcome, " + signupName + "!");
+    window.location.href = "/";
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
+  };
+
+  const handleForgotPassword = () => {
+    const email = window.prompt("Please enter your registered email address to receive a password reset link:");
+    if (email === null) return;
+    if (!email.trim() || !validateEmail(email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+    alert(`Reset password link has been sent to ${email} (Mock Action).`);
+  };
+
+  const handleOAuthLogin = (provider) => {
+    alert(`${provider} connection is currently running in mockup demo mode.`);
   };
 
   return (
@@ -176,6 +279,7 @@ const Login = () => {
           <div className="auth-form">
             <h2>Welcome Back 👋</h2>
             <p className="auth-subtitle">Login to your YelTube account</p>
+<<<<<<< HEAD
             
             <div className="input-group">
               <input
@@ -188,6 +292,16 @@ const Login = () => {
             </div>
             
             <div className="input-group password-group">
+=======
+            <input
+              type="email"
+              placeholder="Email address"
+              value={loginEmail}
+              onChange={(e) => setLoginEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+            <div className="password-input-container">
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
               <input
                 type={showLoginPassword ? "text" : "password"}
                 placeholder="Password"
@@ -195,6 +309,7 @@ const Login = () => {
                 onChange={(e) => setLoginPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               />
+<<<<<<< HEAD
               <span className="password-toggle" onClick={() => setShowLoginPassword(!showLoginPassword)}>
                 {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
               </span>
@@ -205,11 +320,25 @@ const Login = () => {
                 Forgot Password?
               </span>
             </div>
+=======
+              <span 
+                className="password-toggle-icon" 
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+              >
+                {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
+            
+            <span className="forgot-password-link" onClick={handleForgotPassword}>
+              Forgot Password?
+            </span>
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
             <button className="submit-btn" onClick={handleLogin}>
               Login
             </button>
 
+<<<<<<< HEAD
             <div className="divider"><span>OR</span></div>
 
             <div className="social-buttons">
@@ -220,10 +349,20 @@ const Login = () => {
                 <FaFacebook className="social-icon" /> Continue with Facebook
               </button>
             </div>
+=======
+            <div className="auth-separator">OR</div>
+
+            <button className="oauth-btn google" onClick={() => handleOAuthLogin("Google")}>
+              <FaGoogle /> Continue with Google
+            </button>
+            <button className="oauth-btn facebook" onClick={() => handleOAuthLogin("Facebook")}>
+              <FaFacebook /> Continue with Facebook
+            </button>
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
             <p className="switch-text">
               Don't have an account?{" "}
-              <span onClick={() => setMode("signup")}>Sign Up</span>
+              <span onClick={() => setMode("signup")}>Create Account</span>
             </p>
           </div>
         )}
@@ -234,6 +373,7 @@ const Login = () => {
             <h2>Create Account 🎬</h2>
             <p className="auth-subtitle">Join YelTube today</p>
             
+<<<<<<< HEAD
             <div className="input-group">
               <input
                 type="text"
@@ -275,6 +415,69 @@ const Login = () => {
             </div>
             
             <div className="input-group password-group">
+=======
+            {/* Profile Picture Upload */}
+            <div className="avatar-upload-container">
+              <input 
+                type="file" 
+                accept="image/*" 
+                ref={fileInputRef} 
+                style={{ display: "none" }} 
+                onChange={handleAvatarChange} 
+              />
+              <div 
+                className="avatar-preview-wrap" 
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <img 
+                  src={signupAvatar || "https://i.pravatar.cc/150?img=12"} 
+                  alt="Avatar Preview" 
+                />
+                <div className="avatar-upload-overlay">
+                  <FaCamera />
+                </div>
+              </div>
+              <span className="avatar-upload-label">Upload Profile Picture</span>
+            </div>
+
+            <input
+              type="text"
+              placeholder="Full name"
+              value={signupName}
+              onChange={(e) => setSignupName(e.target.value)}
+            />
+            <input
+              type="email"
+              placeholder="Email address"
+              value={signupEmail}
+              onChange={(e) => setSignupEmail(e.target.value)}
+            />
+
+            <div className="dob-input-label">Date of Birth</div>
+            <input
+              type="date"
+              value={signupDob}
+              className="dob-date-picker"
+              onChange={(e) => setSignupDob(e.target.value)}
+            />
+            
+            <div className="password-input-container">
+              <input
+                type={showSignupPassword ? "text" : "password"}
+                placeholder="Password"
+                value={signupPassword}
+                onChange={(e) => setSignupPassword(e.target.value)}
+              />
+              <span 
+                className="password-toggle-icon" 
+                onClick={() => setShowSignupPassword(!showSignupPassword)}
+              >
+                {showSignupPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
+
+            <div className="password-input-container">
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
               <input
                 type={showSignupConfirm ? "text" : "password"}
                 placeholder="Confirm password"
@@ -282,7 +485,14 @@ const Login = () => {
                 onChange={(e) => setSignupConfirm(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSignup()}
               />
+<<<<<<< HEAD
               <span className="password-toggle" onClick={() => setShowSignupConfirm(!showSignupConfirm)}>
+=======
+              <span 
+                className="password-toggle-icon" 
+                onClick={() => setShowSignupConfirm(!showSignupConfirm)}
+              >
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
                 {showSignupConfirm ? <FaEyeSlash /> : <FaEye />}
               </span>
             </div>
@@ -291,6 +501,7 @@ const Login = () => {
               Create Account
             </button>
 
+<<<<<<< HEAD
             <div className="divider"><span>OR</span></div>
 
             <div className="social-buttons">
@@ -301,10 +512,20 @@ const Login = () => {
                 <FaFacebook className="social-icon" /> Sign up with Facebook
               </button>
             </div>
+=======
+            <div className="auth-separator">OR</div>
+
+            <button className="oauth-btn google" onClick={() => handleOAuthLogin("Google")}>
+              <FaGoogle /> Sign up with Google
+            </button>
+            <button className="oauth-btn facebook" onClick={() => handleOAuthLogin("Facebook")}>
+              <FaFacebook /> Sign up with Facebook
+            </button>
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
             <p className="switch-text">
               Already have an account?{" "}
-              <span onClick={() => setMode("login")}>Login</span>
+              <span onClick={() => setMode("login")}>Login Here</span>
             </p>
           </div>
         )}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import os
 import threading
 import logging
@@ -255,3 +256,8 @@ class AdminVideoDeleteView(APIView):
         video.delete()
         return Response({"status": "Video deleted by admin"})
 
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from rest_framework import generics, permissions, status
 from .models import Report, ReportReason
 from .serializers import ReportSerializer, ReportReasonSerializer
@@ -24,3 +25,8 @@ class ReportDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAdminUser]
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

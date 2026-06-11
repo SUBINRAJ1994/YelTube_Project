@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.shortcuts import render
 
 # Create your views here.
@@ -59,4 +60,9 @@ class CreatorCommentsListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Comment.objects.filter(video__user=self.request.user).order_by("-created_at")
+        return Comment.objects.filter(video__user=self.request.user).order_by("-created_at")
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

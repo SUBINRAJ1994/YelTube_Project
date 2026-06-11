@@ -1,6 +1,11 @@
 import "./Shorts.css";
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+=======
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 import shortsData from "../../data/shortsData";
 import {
   FaHeart,
@@ -13,7 +18,18 @@ import {
 } from "react-icons/fa";
 
 const Shorts = () => {
+<<<<<<< HEAD
   // Initialize state from localStorage or defaults
+=======
+  const navigate = useNavigate();
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  
+  const [activeIndex, setActiveIndex] = useState(0);
+  const cardRefs = useRef([]);
+  const videoRefs = useRef({});
+
+  // Initialize state with correct 'commentsList' key to avoid undefined bugs
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
   const [shortsState, setShortsState] = useState(() => {
     const saved = localStorage.getItem("shortsData");
     return saved
@@ -41,6 +57,7 @@ const Shorts = () => {
     localStorage.setItem("shortsData", JSON.stringify(shortsState));
   }, [shortsState]);
 
+<<<<<<< HEAD
   // Setup IntersectionObserver for play/pause states on visible items
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -148,8 +165,48 @@ const Shorts = () => {
       });
     }
   };
+=======
+  // Keyboard navigation & scroll snapping
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((prev) => Math.min(prev + 1, shortsState.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((prev) => Math.max(prev - 1, 0));
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [shortsState.length]);
+
+  // Scroll active card into view
+  useEffect(() => {
+    cardRefs.current[activeIndex]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activeIndex]);
+
+  // Play only active video, pause others
+  useEffect(() => {
+    shortsState.forEach((s, idx) => {
+      const vid = videoRefs.current[s.id];
+      if (vid) {
+        if (idx === activeIndex) {
+          vid.play().catch(() => {});
+        } else {
+          vid.pause();
+        }
+      }
+    });
+  }, [activeIndex, shortsState]);
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
   const handleLike = (id) => {
+    if (!currentUser) {
+      alert("Please login to like this short.");
+      navigate("/login");
+      return;
+    }
     setShortsState((prev) =>
       prev.map((short) => {
         if (short.id !== id) return short;
@@ -187,6 +244,11 @@ const Shorts = () => {
   };
 
   const handleDislike = (id) => {
+    if (!currentUser) {
+      alert("Please login to dislike this short.");
+      navigate("/login");
+      return;
+    }
     setShortsState((prev) =>
       prev.map((short) => {
         if (short.id !== id) return short;
@@ -217,6 +279,11 @@ const Shorts = () => {
   };
 
   const handleWatchLater = (short) => {
+    if (!currentUser) {
+      alert("Please login to save shorts to Watch Later.");
+      navigate("/login");
+      return;
+    }
     let watchLater = JSON.parse(localStorage.getItem("watchLater")) || [];
     if (watchLater.some((item) => item.id === short.id)) {
       alert("Already added to Watch Later");
@@ -246,6 +313,11 @@ const Shorts = () => {
   };
 
   const addComment = (id) => {
+    if (!currentUser) {
+      alert("Please login to write comments.");
+      navigate("/login");
+      return;
+    }
     setShortsState((prev) =>
       prev.map((short) => {
         if (short.id !== id) return short;
@@ -257,7 +329,7 @@ const Shorts = () => {
             ...(short.commentsList || []),
             {
               id: Date.now(),
-              user: "You",
+              user: currentUser ? currentUser.name : "You",
               text: short.commentInput,
               likes: 0,
               dislikes: 0,
@@ -287,6 +359,11 @@ const Shorts = () => {
   };
 
   const likeComment = (shortId, commentId) => {
+    if (!currentUser) {
+      alert("Please login to like comments.");
+      navigate("/login");
+      return;
+    }
     setShortsState((prev) =>
       prev.map((short) => {
         if (short.id !== shortId) return short;
@@ -318,6 +395,11 @@ const Shorts = () => {
   };
 
   const dislikeComment = (shortId, commentId) => {
+    if (!currentUser) {
+      alert("Please login to dislike comments.");
+      navigate("/login");
+      return;
+    }
     setShortsState((prev) =>
       prev.map((short) => {
         if (short.id !== shortId) return short;
@@ -359,6 +441,7 @@ const Shorts = () => {
 
   return (
     <div className="shorts-page">
+<<<<<<< HEAD
       {/* Floating Create Short button */}
       <Link to="/upload?category=Shorts" className="create-short-btn-floating" title="Create Short">
         <FaPlusCircle />
@@ -375,11 +458,22 @@ const Shorts = () => {
         {shortsState.map((short) => {
           const channelHandle = `@creator_${short.id.toString().substring(0, 5)}`;
           const avatarUrl = `https://ui-avatars.com/api/?name=C${short.id.toString().substring(0,1)}&background=ff0000&color=ffffff&bold=true`;
+=======
+      <div className="shorts-scroll-container">
+        {shortsState.map((short, idx) => {
+          const channelHandle = `@creator_${short.id}`;
+          const avatarUrl = `https://ui-avatars.com/api/?name=C${short.id}&background=ff0000&color=ffffff&bold=true`;
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
           return (
-            <div className="short-card" key={short.id}>
+            <div 
+              className={`short-card ${idx === activeIndex ? "active-card" : ""}`} 
+              key={short.id}
+              ref={(el) => { cardRefs.current[idx] = el; }}
+            >
               <div className="short-video-container">
                 <video
+<<<<<<< HEAD
                   ref={(el) => {
                     if (el) {
                       videoRefs.current[short.id] = el;
@@ -387,6 +481,9 @@ const Shorts = () => {
                       delete videoRefs.current[short.id];
                     }
                   }}
+=======
+                  ref={(el) => { videoRefs.current[short.id] = el; }}
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
                   src={short.video}
                   className="short-video"
                   muted

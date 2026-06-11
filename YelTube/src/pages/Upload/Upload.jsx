@@ -151,6 +151,7 @@ const Upload = () => {
   const [thumbnail, setThumbnail] = useState(null);
   const [videoPreview, setVideoPreview] = useState("");
   const [thumbnailPreview, setThumbnailPreview] = useState("");
+  const [videoDuration, setVideoDuration] = useState("");
   
   // New Metadata & Compression States
   const [videoSize, setVideoSize] = useState("");
@@ -246,7 +247,99 @@ const Upload = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleUpload = async () => {
+=======
+  const resumeUploadToCompletion = (startProgress, report) => {
+    let progress = startProgress;
+    const interval = setInterval(() => {
+      progress += 1;
+      setUploadProgress(progress);
+      
+      if (progress < 100) {
+        setUploadStep("Finalizing content upload...");
+      }
+
+      if (progress >= 100) {
+        clearInterval(interval);
+        setUploading(false);
+
+        const channelName = currentUser ? currentUser.name : "Anonymous Channel";
+
+        const newVideo = {
+          id: Date.now(),
+          title: title,
+          description: description,
+          category: category,
+          thumbnail: thumbnailPreview || "https://picsum.photos/300/200",
+          videoUrl: videoPreview,
+          channel: channelName,
+          channelLogo: "https://i.pravatar.cc/40",
+          views: "0 views",
+          time: "Just now",
+          duration: videoDuration || "3:00",
+          youtubeId: "dQw4w9WgXcQ",
+          moderationStatus: report.status
+        };
+
+        const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
+        uploadedVideos.unshift(newVideo);
+        localStorage.setItem("uploadedVideos", JSON.stringify(uploadedVideos));
+
+        const myVideos = JSON.parse(localStorage.getItem("myVideos")) || [];
+        myVideos.unshift(newVideo);
+        localStorage.setItem("myVideos", JSON.stringify(myVideos));
+
+        const subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
+        if (subscriptions.includes(channelName)) {
+          const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
+          notifications.unshift({
+            id: Date.now(),
+            message: `${channelName} uploaded a new video: "${title}"`,
+            videoId: newVideo.id,
+            time: "Just now",
+            read: false
+          });
+          localStorage.setItem("notifications", JSON.stringify(notifications));
+        }
+
+        if (report.status === "REVIEW") {
+          const reports = JSON.parse(localStorage.getItem("adminReports")) || [];
+          const newReport = {
+            id: Date.now(),
+            type: "video_moderation_review",
+            content: `Video "${title}" was uploaded and flagged for review. Reason: ${report.reason}`,
+            reporter: "YelTube AI Moderation Engine",
+            targetId: newVideo.id,
+            videoId: newVideo.id,
+            videoTitle: newVideo.title,
+            createdAt: new Date().toISOString(),
+          };
+          reports.push(newReport);
+          localStorage.setItem("adminReports", JSON.stringify(reports));
+          alert(`Upload Successful! Note: Video is currently under review by content moderators.`);
+        } else {
+          alert("Upload Successful!");
+        }
+
+        setTitle("");
+        setDescription("");
+        setCategory("");
+        setVideoFile(null);
+        setThumbnail(null);
+        setVideoPreview("");
+        setThumbnailPreview("");
+
+        setTimeout(() => {
+          setUploadProgress(0);
+          setUploadStep("");
+        }, 2000);
+      }
+    }, 50);
+  };
+
+  const handleUpload = () => {
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
     if (
       !title ||
       !description ||
@@ -296,6 +389,7 @@ const Upload = () => {
 
     let progress = 10;
     const interval = setInterval(() => {
+<<<<<<< HEAD
       if (progress < 90) {
         progress += 5;
         setUploadProgress(progress);
@@ -303,6 +397,43 @@ const Upload = () => {
           setUploadStep("FFmpeg: extracting audio channel (aac/mp3)...");
         } else if (progress < 60) {
           setUploadStep(`FFmpeg: Compressing video layout (libx264 -crf 23)...`);
+=======
+      progress += 1;
+      setUploadProgress(progress);
+
+      if (progress < 20) {
+        setUploadStep("FFmpeg: Detecting video duration and resolution metadata...");
+      } else if (progress >= 20 && progress < 40) {
+        setUploadStep("FFmpeg: Compressing video file (converting resolution to 1080p)...");
+      } else if (progress >= 40 && progress < 60) {
+        setUploadStep("FFmpeg: Auto-extracting keyframes and generating thumbnails...");
+      } else if (progress >= 60 && progress < 80) {
+        setUploadStep("Preprocessing: Generating transcripts & auto-detecting language...");
+      } else if (progress >= 80 && progress < 95) {
+        setUploadStep("AI Content Moderation Engine: Scanning video frames and audio track...");
+      } else if (progress === 95) {
+        clearInterval(interval);
+        
+        const report = runModerationEngine(title, description, videoFile, thumbnail);
+        setModerationReport(report);
+
+        if (report.status === "BLOCK") {
+          setUploading(false);
+          setUploadProgress(0);
+          setUploadStep("");
+
+          const dbUser = currentUser ? users.find(u => u.email === currentUser.email) : null;
+          const userWarnings = (currentUser && currentUser.warnings) || (dbUser && dbUser.warnings) || 0;
+          const isRepeatOffender = userWarnings >= 1;
+          const isSevereBan = report.severity === "SEVERE_BAN";
+
+          if (isSevereBan || isRepeatOffender) {
+            banUserPermanently();
+            alert("UPLOAD BLOCKED: Your channel has been permanently suspended for severe policy violations.");
+          } else {
+            setShowWarningModal(true);
+          }
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
         } else {
           setUploadStep("AI Guard: Analysing speech transcript and metadata...");
         }
@@ -477,6 +608,7 @@ const Upload = () => {
             if (!file) return;
             setVideoFile(file);
             setVideoPreview(URL.createObjectURL(file));
+<<<<<<< HEAD
             generateThumbnail(file); // Dynamic canvas extraction
           }}
         />
@@ -490,6 +622,43 @@ const Upload = () => {
             </div>
           </div>
         )}
+=======
+
+            const videoEl = document.createElement("video");
+            videoEl.preload = "metadata";
+            videoEl.src = URL.createObjectURL(file);
+            videoEl.onloadedmetadata = () => {
+              URL.revokeObjectURL(videoEl.src);
+              const minutes = Math.floor(videoEl.duration / 60);
+              const seconds = Math.floor(videoEl.duration % 60);
+              setVideoDuration(`${minutes}:${String(seconds).padStart(2, "0")}`);
+            };
+          }}
+        />
+
+        {videoFile && (
+          <div className="file-metadata-info" style={{ margin: "6px 0 12px 0", fontSize: "13px", color: "var(--text-secondary)", display: "flex", gap: "16px" }}>
+            <span><strong>Size:</strong> {(videoFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+            {videoDuration && <span><strong>Duration:</strong> {videoDuration}</span>}
+          </div>
+        )}
+
+        {
+          videoPreview && (
+
+            <video
+              src={videoPreview}
+              controls
+              className="video-preview"
+            />
+
+          )
+        }
+
+        <label>
+          Upload Thumbnail
+        </label>
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
         <label className="input-label">Upload Custom Thumbnail (Or use auto-generated keyframe)</label>
         <input
@@ -503,12 +672,32 @@ const Upload = () => {
           }}
         />
 
+<<<<<<< HEAD
         {thumbnailPreview && (
           <div className="thumbnail-preview-wrap">
             <img src={thumbnailPreview} alt="Thumbnail Preview" className="thumbnail-preview" />
             <span className="thumbnail-preview-label">Thumbnail Preview</span>
           </div>
         )}
+=======
+        {thumbnail && (
+          <div className="file-metadata-info" style={{ margin: "6px 0 12px 0", fontSize: "13px", color: "var(--text-secondary)" }}>
+            <span><strong>Size:</strong> {(thumbnail.size / 1024).toFixed(1)} KB</span>
+          </div>
+        )}
+
+        {
+          thumbnailPreview && (
+
+            <img
+              src={thumbnailPreview}
+              alt="Thumbnail Preview"
+              className="thumbnail-preview"
+            />
+
+          )
+        }
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
 
         <button
           onClick={handleUpload}

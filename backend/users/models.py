@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -35,4 +36,26 @@ class PasswordResetToken(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Reset Token for {self.user.username} (used={self.is_used})"
+        return f"Reset Token for {self.user.username} (used={self.is_used})"
+=======
+from django.db import models
+
+# Create your models here.
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+
+    profile_pic = models.ImageField(
+        upload_to="profile_pics/",
+        blank=True,
+        null=True
+    )
+
+    banner_image = models.ImageField(
+        upload_to="banners/",
+        blank=True,
+        null=True
+    )
+
+    bio = models.TextField(blank=True)
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

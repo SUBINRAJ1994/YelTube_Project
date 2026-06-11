@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import json
 import secrets
 import urllib.request
@@ -353,3 +354,8 @@ class AdminUserBanToggleView(APIView):
             "is_active": user.is_active,
             "banned": not user.is_active,
         })
+=======
+from django.shortcuts import render
+
+# Create your views here.
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9

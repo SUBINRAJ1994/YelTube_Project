@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import "./Register.css";
 import { useState, useRef } from "react";
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebook, FaCamera, FaSignInAlt } from "react-icons/fa";
@@ -30,10 +31,41 @@ const Register = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       setAvatar(event.target.result);
+=======
+import { useState, useRef } from "react";
+import "./Register.css";
+import { FaEye, FaEyeSlash, FaCamera, FaGoogle, FaFacebook } from "react-icons/fa";
+import { Link } from "react-router-dom";
+
+const Register = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [avatar, setAvatar] = useState("");
+  const [dob, setDob] = useState("");
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const fileInputRef = useRef(null);
+
+  const validateEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setAvatar(ev.target.result);
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
     };
     reader.readAsDataURL(file);
   };
 
+<<<<<<< HEAD
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
@@ -50,16 +82,31 @@ const Register = () => {
       return;
     }
 
+=======
+  const handleRegister = () => {
+    if (!name || !email || !password || !confirmPassword || !dob) {
+      alert("Please fill all fields, including Date of Birth");
+      return;
+    }
+    if (!validateEmail(email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
     if (password.length < 6) {
       alert("Password must be at least 6 characters long.");
       return;
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
     }
 
+<<<<<<< HEAD
     try {
       // 1. Create account
       await authService.register(name, email, password, dateOfBirth);
@@ -97,12 +144,48 @@ const Register = () => {
     } catch (err) {
       alert(`Error signing up with ${provider}: ${err.response?.data?.error || "OAuth failed"}`);
     }
+=======
+    const emailKey = email.replace(/[@.]/g, "_");
+    const avatarToSave = avatar || `https://i.pravatar.cc/150?u=${email}`;
+
+    const userData = {
+      name,
+      email,
+      password,
+      avatar: avatarToSave,
+      dob,
+      banned: false,
+    };
+
+    const users = JSON.parse(localStorage.getItem("users")) || [];
+    if (users.some((u) => u.email === email)) {
+      alert("Email already registered!");
+      return;
+    }
+    users.push(userData);
+    localStorage.setItem("users", JSON.stringify(users));
+
+    // Save avatar specifically
+    localStorage.setItem(`profileImage_${emailKey}`, avatarToSave);
+    localStorage.setItem(`profileImage_${email}`, avatarToSave);
+
+    localStorage.setItem("yeltubeUser", JSON.stringify(userData));
+    localStorage.setItem("currentUser", JSON.stringify(userData));
+    localStorage.setItem("isLoggedIn", "true");
+    alert("Registration successful! Welcome, " + name);
+    window.location.href = "/";
+  };
+
+  const handleOAuthSignup = (provider) => {
+    alert(`${provider} connection is currently running in mockup demo mode.`);
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
   };
 
   return (
     <div className="register-page">
       <div className="register-container">
         <h2>Create Account 🎬</h2>
+<<<<<<< HEAD
         <p className="register-subtitle">Join the YelTube community today</p>
 
         {/* Profile Picture Upload Section */}
@@ -116,10 +199,32 @@ const Register = () => {
                 <span>Upload</span>
               </div>
             )}
+=======
+        <p className="register-subtitle">Join YelTube today</p>
+
+        {/* Profile Picture Upload */}
+        <div className="avatar-upload-container">
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleAvatarChange}
+          />
+          <div
+            className="avatar-preview-wrap"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <img
+              src={avatar || "https://i.pravatar.cc/150?img=12"}
+              alt="Avatar Preview"
+            />
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
             <div className="avatar-upload-overlay">
               <FaCamera />
             </div>
           </div>
+<<<<<<< HEAD
           <input
             type="file"
             accept="image/*"
@@ -170,11 +275,52 @@ const Register = () => {
             onKeyDown={(e) => e.key === "Enter" && handleRegister()}
           />
           <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+=======
+          <span className="avatar-upload-label">Upload Profile Picture</span>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Username"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          type="email"
+          placeholder="Enter Your Email id"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+
+        <div className="dob-input-label">Date of Birth</div>
+        <input
+          type="date"
+          value={dob}
+          className="dob-date-picker"
+          onChange={(e) => setDob(e.target.value)}
+        />
+
+        <div className="password-input-container">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <span
+            className="password-toggle-icon"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
             {showPassword ? <FaEyeSlash /> : <FaEye />}
           </span>
         </div>
 
+<<<<<<< HEAD
         <div className="input-group password-group">
+=======
+        <div className="password-input-container">
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
           <input
             type={showConfirmPassword ? "text" : "password"}
             placeholder="Confirm Password"
@@ -182,11 +328,19 @@ const Register = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleRegister()}
           />
+<<<<<<< HEAD
           <span className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)} onKeyDown={(e) => e.key === "Enter" && handleRegister()}>
+=======
+          <span
+            className="password-toggle-icon"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
           </span>
         </div>
 
+<<<<<<< HEAD
         <button className="register-btn" onClick={handleRegister} onKeyDown={(e) => e.key === "Enter" && handleRegister()}>
           Register
         </button>
@@ -206,6 +360,25 @@ const Register = () => {
           Already have an account?{" "}
           <Link to="/login" className="login-link">
             Login <FaSignInAlt className="inline-login-icon" />
+=======
+        <button onClick={handleRegister} className="register-submit-btn">
+          Register
+        </button>
+
+        <div className="auth-separator">OR</div>
+
+        <button className="oauth-btn google" onClick={() => handleOAuthSignup("Google")}>
+          <FaGoogle /> Sign up with Google
+        </button>
+        <button className="oauth-btn facebook" onClick={() => handleOAuthSignup("Facebook")}>
+          <FaFacebook /> Sign up with Facebook
+        </button>
+
+        <p className="switch-text-register">
+          Already have an account?{" "}
+          <Link to="/login">
+            <span>Login Here</span>
+>>>>>>> b686d1b5e1f53f1188c71b00de8a8d59206730d9
           </Link>
         </p>
       </div>
