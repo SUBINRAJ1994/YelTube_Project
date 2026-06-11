@@ -1,262 +1,92 @@
-# YelTube — Major Frontend Features Roadmap
+# YelTube — Engineering Implementation Plan (Phases 14–22)
 
-A comprehensive implementation plan for all remaining features. Each phase builds on the last and follows the recommended priority order.
-
----
-
-## ✅ Already Completed
-- Creator Studio Dashboard (stats cards + video table with edit/delete)
-- Live Streaming Page (chat, viewer count, like/subscribe/share)
-- Notifications (header dropdown, read/unread, localStorage)
-- Dark / Light Theme toggle
-- Upload with persistence
-- Login / Sign Up in one page
-- Watch progress resume
-- Share button (clipboard)
+This implementation plan outlines the steps required to transition YelTube from local storage and mock mechanics to a fully integrated production-ready backend, implementing Channel routes, Admin views, adaptive streaming (HLS), and operational logging/backups.
 
 ---
 
-## Phase 1 — Creator Studio (Expand)
+## User Review Required
 
-### [MODIFY] Studio.jsx / Studio.css
-**Pages inside Studio:**
-- `Studio Dashboard` ← ✅ Done
-- `My Videos` tab — table of uploaded videos with edit/delete/update thumbnail/description
-- `Analytics` tab — views chart, watch time graph, top videos
-- `Comments` tab — list comments on all videos, delete/reply
-- `Revenue (Demo)` tab — fake revenue dashboard with charts
-
-**Video Management inside Studio:**
-- Edit video title (inline) ← ✅ Done
-- Delete video ← ✅ Done  
-- [ ] Update Thumbnail (upload new image)
-- [ ] Update Description (inline textarea)
+> [!IMPORTANT]
+> - **CORS Middleware Configuration:** We must activate `corsheaders.middleware.CorsMiddleware` in `settings.py` to allow React dev server requests on port `5173` to safely reach DRF on port `8000`.
+> - **HLS Streaming Tooling:** The HLS Adaptive Bitrate compilation requires FFmpeg to be present on the system path of the environment hosting the backend.
+> - **Database Port:** The local database port is set to `3307` in `settings.py`. Ensure this remains valid for the environment.
 
 ---
 
-## Phase 2 — Notification Center
+## Open Questions
 
-### [NEW] `pages/Notifications/Notifications.jsx`
-Full notifications page at `/notifications`:
-- 🔔 Alex subscribed
-- ❤️ John liked your video
-- 💬 New comment received
-- Mark all as read
-- Filter: All | Unread | Subscriptions | Comments
+> [!NOTE]
+> None at this stage. All requirements align with the Django and React architecture.
 
 ---
 
-## Phase 3 — Channel Page Upgrade
+## Proposed Changes
 
-### [MODIFY] `pages/Channel/Channel.jsx` + `Channel.css`
-- **Banner image** (upload or default gradient)
-- **Profile picture** (upload)
-- **Subscribers count**
-- **4 Tabs:**
-  - `Videos` — grid of uploaded videos
-  - `Playlists` — user playlists
-  - `Community` — posts feed
-  - `About` — channel description, links, stats
+We will implement changes incrementally starting from dependencies first, then the core backend endpoints, and finally the React user interfaces.
 
----
+### Component 1: CORS & General Settings Update
 
-## Phase 4 — Community Posts
-
-### [NEW] `pages/Community/Community.jsx`
-- Create a post (text / poll)
-- Like post
-- Comment on post
-- Poll post example:
-  > *What tutorial next?*
-  > - React ✅
-  > - Django
-  > - Python
-- Stored in `localStorage("communityPosts")`
+#### [MODIFY] [settings.py](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/backend/backend/settings.py)
+- Append `'corsheaders.middleware.CorsMiddleware'` to `MIDDLEWARE`.
+- Add `CORS_ALLOW_ALL_ORIGINS = True` (or configure exact whitelist `CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://127.0.0.1:5173"]`).
+- Implement `LOGGING` config (Phase 19).
 
 ---
 
-## Phase 5 — Search Suggestions
+### Component 2: Channel & User Search Views (Phase 14 & 15)
 
-### [MODIFY] `components/Header/Header.jsx`
-While typing "rea", show dropdown:
-- React
-- React Tutorial
-- React Hooks
+#### [NEW] [channel urls & views](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/backend/backend/urls.py)
+We will map public channel details under `/api/channel/<username>/` endpoints using django urls.
 
-Suggestions sourced from:
-1. Uploaded video titles
-2. Static popular search list
+#### [MODIFY] [views.py](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/backend/users/views.py)
+- Create `ChannelVideosListView` to fetch public videos uploaded by a specific user.
+- Create `ChannelPlaylistsListView` to fetch public playlists created by a user.
+- Create a user/channel search viewpoint to power the search results page.
 
----
-
-## Phase 6 — Trending Page
-
-### [NEW] `pages/Trending/Trending.jsx`  
-Route: `/trending`
-
-Categories:
-- 🎮 Gaming
-- 🎵 Music
-- 💻 Technology
-- ⚽ Sports
-
-Each category shows a grid of trending videos.
+#### [MODIFY] [urls.py](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/backend/users/urls.py)
+- Expose search and listing paths.
 
 ---
 
-## Phase 7 — Explore Page
+### Component 3: Administrative Dashboard & Controls (Phase 18)
 
-### [NEW] `pages/Explore/Explore.jsx`  
-Route: `/explore`
-
-Cards:
-- 🔥 Trending
-- 🎬 Movies
-- 🎮 Gaming
-- 📰 News
-- 📚 Learning
-- 🔴 Live
+#### [NEW] [views.py](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/backend/users/views.py)
+- Create `AdminStatsView` (accessible only by `IsAdminUser`) returning aggregated database counts:
+  - Users (`User.objects.count()`)
+  - Videos (`Video.objects.count()`)
+  - Views (`Video.objects.aggregate(Sum('views'))`)
+  - Reports (`Report.objects.count()`)
+- Create `AdminUserListView` and `AdminUserBanView` to toggle ban flags (`user.is_active = False`).
+- Create `AdminVideoListView` and `AdminVideoDeleteView` to handle admin content deletions.
 
 ---
 
-## Phase 8 — Premium Page
+### Component 4: Video Player & Watch Progress (Phase 17)
 
-### [NEW] `pages/Premium/Premium.jsx`  
-Route: `/premium`
-
-Features shown:
-- 🚫 No Ads
-- 🎵 Background Play
-- ⬇️ Downloads
-- 📴 Offline Mode
-- 💰 Pricing card (Demo)
+#### [MODIFY] [Watch.jsx](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/YelTube/src/pages/Watch/Watch.jsx)
+- Restore missing playback state hooks: `isPlaying`, `currentTime`, `duration`, `volume`, `isMuted`, `ccActive`, `showSettingsMenu`, `playbackSpeed`, `resolution`.
+- Integrate resolution selector options. Load resolution variants from `VideoResolutionFile` list instead of mock URLs.
+- Provide auto-bitrate switching fallback logic.
 
 ---
 
-## Phase 9 — Settings Page
+### Component 5: Header Notifications integration (Phase 16)
 
-### [NEW] `pages/Settings/Settings.jsx`  
-Route: `/settings`
-
-Sections:
-- 🌓 Dark Mode toggle
-- 🌐 Language selector
-- 🔒 Privacy options
-- 🔔 Notification preferences
-- 👤 Account management
+#### [MODIFY] [Header.jsx](file:///c:/Users/subin/OneDrive/Desktop/Yeltube_project/YelTube/src/components/Header/Header.jsx)
+- Hook up notification dropdown to `notificationService.getNotifications()`.
+- Add notification count badge.
+- Implement "Mark as Read" triggers calling `notificationService.markAsRead(id)`.
 
 ---
 
-## Phase 10 — Video Comments Upgrade
+## Verification Plan
 
-### [MODIFY] `pages/Watch/Watch.jsx`
-Current: Basic add comment  
-Upgrade:
-- 👍 Like comment
-- 💬 Reply comment (nested)
-- 🗑 Delete comment (own)
-- ✏️ Edit comment (own)
-- Report comment
+### Automated Tests
+- Run `python manage.py test` to verify no models or validation tests break.
+- Run `npm run build` inside `YelTube` directory to ensure perfect JSX syntax.
 
----
-
-## Phase 11 — Share Modal Upgrade
-
-### [MODIFY] Wherever `handleShare` is used
-Current: `alert("Copied")`  
-Upgrade: Modal with:
-- WhatsApp share link
-- Facebook share link
-- Twitter / X share link
-- Copy Link button with toast notification
-
----
-
-## Phase 12 — Playlist Management Upgrade
-
-### [MODIFY] `pages/Playlists/Playlists.jsx`
-Current: Create playlist  
-Add:
-- ✏️ Rename playlist
-- 🗑 Delete playlist
-- ➖ Remove video from playlist
-- Reorder videos (drag hint UI)
-
----
-
-## Phase 13 — Subscription Feed Upgrade
-
-### [MODIFY] `pages/Subscriptions/Subscriptions.jsx`
-Current: Show subscribed channels  
-Upgrade:
-- Latest uploads only
-- Sort by newest first
-- "New" badge on unseen uploads
-
----
-
-## Phase 14 — Live Streaming Upgrade
-
-### [MODIFY] `pages/LiveStream/LiveStream.jsx`
-Current: Demo chat + viewers  
-Add UI:
-- 💰 Super Chat panel (already has button, add full modal)
-- 📌 Pinned Message (moderator can pin a message)
-- 🛡️ Moderator Badge on usernames
-- 📅 Stream Schedule card
-
----
-
-## Phase 15 — Admin Panel
-
-### [MODIFY] `pages/Admin/Admin.jsx`  
-### [NEW] `pages/Admin/AdminUsers.jsx` → `/admin/users`  
-### [NEW] `pages/Admin/AdminVideos.jsx` → `/admin/videos`  
-### [NEW] `pages/Admin/AdminReports.jsx` → `/admin/reports`
-
-Pages:
-- `/admin` — overview dashboard
-- `/admin/users` — list all users, ban/remove
-- `/admin/videos` — all videos, delete/flag
-- `/admin/reports` — reported content queue
-
----
-
-## Phase 16 — Responsive Mobile Design
-
-### [MODIFY] All CSS files  
-Test breakpoints:
-- 320px (small phones)
-- 375px (iPhone SE)
-- 425px (iPhone Pro)
-- 768px (tablet)
-- 1024px (small laptop)
-
-Key fixes likely needed:
-- Sidebar collapses on mobile
-- Header search bar responsive
-- Video grid column count
-- Studio table horizontal scroll
-- Chat panel stacks below video on mobile
-
----
-
-## Recommended Implementation Order
-
-| # | Feature | Effort | Impact |
-|---|---|---|---|
-| 1 | Creator Studio — Tabs (My Videos, Analytics, Comments, Revenue) | Medium | ⭐⭐⭐⭐⭐ |
-| 2 | Notification Center page `/notifications` | Low | ⭐⭐⭐⭐ |
-| 3 | Settings page `/settings` | Low | ⭐⭐⭐⭐ |
-| 4 | Channel Page Upgrade (banner, tabs) | Medium | ⭐⭐⭐⭐⭐ |
-| 5 | Community Posts | Medium | ⭐⭐⭐⭐ |
-| 6 | Trending + Explore pages | Low | ⭐⭐⭐ |
-| 7 | Admin Panel full | Medium | ⭐⭐⭐ |
-| 8 | Comments Upgrade (reply/like/edit) | Medium | ⭐⭐⭐⭐ |
-| 9 | Share Modal | Low | ⭐⭐⭐ |
-| 10 | Search Suggestions | Low | ⭐⭐⭐ |
-| 11 | Playlist Management | Low | ⭐⭐⭐ |
-| 12 | Responsive Polish | High | ⭐⭐⭐⭐⭐ |
-| 13 | Premium Page | Low | ⭐⭐ |
-| 14 | Live Stream Upgrade | Low | ⭐⭐⭐ |
-| 15 | Subscription Feed Upgrade | Low | ⭐⭐⭐ |
+### Manual Verification
+- Deploy to local development stack.
+- Login as Admin, inspect stats on `/admin`.
+- Try toggling ban status of a mock creator user, check if user is active.
+- Navigate to `/channel/<username>`, check tab switching (Videos, Playlists, About).

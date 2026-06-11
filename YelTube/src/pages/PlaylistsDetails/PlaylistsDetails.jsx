@@ -1,18 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "./PlaylistsDetails.css";
 import { FaTrash, FaChevronLeft, FaPlayCircle, FaArrowUp, FaArrowDown, FaEdit } from "react-icons/fa";
+import playlistService from "../../services/playlistService";
 
 const PlaylistsDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [playlist, setPlaylist] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [playlists, setPlaylists] = useState(
-    JSON.parse(localStorage.getItem("playlists")) || []
-  );
+  const fetchPlaylistDetails = async () => {
+    try {
+      setLoading(true);
+      const data = await playlistService.getPlaylistDetail(id);
+      setPlaylist(data);
+    } catch (err) {
+      console.error("Error loading playlist details:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const playlistIndex = playlists.findIndex((item) => item.id === Number(id));
-  const playlist = playlists[playlistIndex];
+  useEffect(() => {
+    fetchPlaylistDetails();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="playlist-details-page">
+        <div className="playlist-details-container">
+          <Link to="/playlists" className="back-playlists-btn"><FaChevronLeft /> Playlists</Link>
+          <h2>Loading playlist...</h2>
+        </div>
+      </div>
+    );
+  }
 
   if (!playlist) {
     return (
@@ -25,45 +48,38 @@ const PlaylistsDetails = () => {
     );
   }
 
-  const handleRemoveVideo = (videoId) => {
+  const handleRemoveVideo = async (videoId) => {
     if (!window.confirm("Remove this video from the playlist?")) return;
-
-    const updatedPlaylists = playlists.map((pl) => {
-      if (pl.id === Number(id)) {
-        return {
-          ...pl,
-          videos: pl.videos.filter((v) => v.id !== videoId),
-        };
-      }
-      return pl;
-    });
-
-    setPlaylists(updatedPlaylists);
-    localStorage.setItem("playlists", JSON.stringify(updatedPlaylists));
+    try {
+      await playlistService.removeVideoFromPlaylist(playlist.id, videoId);
+      setPlaylist({
+        ...playlist,
+        videos: playlist.videos.filter((v) => v.id !== videoId),
+      });
+    } catch (err) {
+      console.error("Error removing video:", err);
+    }
   };
 
-  const renamePlaylist = () => {
+  const renamePlaylist = async () => {
     const newName = window.prompt("Rename playlist to:", playlist.name);
     if (!newName || !newName.trim()) return;
-
-    const updatedPlaylists = playlists.map((pl) => {
-      if (pl.id === Number(id)) {
-        return { ...pl, name: newName };
-      }
-      return pl;
-    });
-
-    setPlaylists(updatedPlaylists);
-    localStorage.setItem("playlists", JSON.stringify(updatedPlaylists));
+    try {
+      const updated = await playlistService.updatePlaylist(playlist.id, newName);
+      setPlaylist(updated);
+    } catch (err) {
+      console.error("Error renaming playlist:", err);
+    }
   };
 
-  const deletePlaylist = () => {
+  const deletePlaylist = async () => {
     if (!window.confirm("Delete this playlist permanently?")) return;
-
-    const updatedPlaylists = playlists.filter((pl) => pl.id !== Number(id));
-    setPlaylists(updatedPlaylists);
-    localStorage.setItem("playlists", JSON.stringify(updatedPlaylists));
-    navigate("/playlists");
+    try {
+      await playlistService.deletePlaylist(playlist.id);
+      navigate("/playlists");
+    } catch (err) {
+      console.error("Error deleting playlist:", err);
+    }
   };
 
   const moveVideo = (index, direction) => {
@@ -77,18 +93,10 @@ const PlaylistsDetails = () => {
     newVideos[index] = newVideos[targetIndex];
     newVideos[targetIndex] = temp;
 
-    const updatedPlaylists = playlists.map((pl) => {
-      if (pl.id === Number(id)) {
-        return {
-          ...pl,
-          videos: newVideos,
-        };
-      }
-      return pl;
+    setPlaylist({
+      ...playlist,
+      videos: newVideos,
     });
-
-    setPlaylists(updatedPlaylists);
-    localStorage.setItem("playlists", JSON.stringify(updatedPlaylists));
   };
 
   return (

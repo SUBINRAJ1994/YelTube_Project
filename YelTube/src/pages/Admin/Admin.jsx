@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "./Admin.css";
 import { FaUsers, FaVideo, FaExclamationTriangle, FaArrowRight, FaShieldAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import staticVideos from "../../data/videos";
+import API from "../../services/api";
 
 const Admin = () => {
   const [usersCount, setUsersCount] = useState(0);
@@ -10,24 +10,17 @@ const Admin = () => {
   const [reportsCount, setReportsCount] = useState(0);
 
   useEffect(() => {
-    // Users count
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    setUsersCount(users.length);
-
-    // Videos count
-    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-    const all = [...uploaded, ...staticVideos];
-    const seen = new Set();
-    const uniqueVideos = all.filter((v) => {
-      if (seen.has(v.id)) return false;
-      seen.add(v.id);
-      return true;
-    });
-    setVideosCount(uniqueVideos.length);
-
-    // Reports count
-    const reports = JSON.parse(localStorage.getItem("adminReports")) || [];
-    setReportsCount(reports.length);
+    const fetchStats = async () => {
+      try {
+        const res = await API.get("admin/stats/");
+        setUsersCount(res.data.total_users);
+        setVideosCount(res.data.total_videos);
+        setReportsCount(res.data.total_reports);
+      } catch (err) {
+        console.error("Error fetching admin stats:", err);
+      }
+    };
+    fetchStats();
   }, []);
 
   return (

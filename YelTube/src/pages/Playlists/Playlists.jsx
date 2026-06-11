@@ -1,46 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./Playlists.css";
 import { Link } from "react-router-dom";
 import { FaTrash, FaEdit, FaPlusCircle, FaFolderOpen } from "react-icons/fa";
+import playlistService from "../../services/playlistService";
 
 const Playlists = () => {
   const [playlistName, setPlaylistName] = useState("");
-  const [playlists, setPlaylists] = useState(
-    JSON.parse(localStorage.getItem("playlists")) || []
-  );
+  const [playlists, setPlaylists] = useState([]);
 
-  const createPlaylist = () => {
+  const fetchPlaylists = async () => {
+    try {
+      const data = await playlistService.getPlaylists();
+      setPlaylists(data);
+    } catch (err) {
+      console.error("Error loading playlists:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, []);
+
+  const createPlaylist = async () => {
     if (!playlistName.trim()) {
       return;
     }
-
-    const newPlaylist = {
-      id: Date.now(),
-      name: playlistName,
-      videos: [],
-    };
-
-    const updatedPlaylists = [...playlists, newPlaylist];
-    setPlaylists(updatedPlaylists);
-    localStorage.setItem("playlists", JSON.stringify(updatedPlaylists));
-    setPlaylistName("");
+    try {
+      const newPlaylist = await playlistService.createPlaylist(playlistName);
+      setPlaylists([...playlists, newPlaylist]);
+      setPlaylistName("");
+    } catch (err) {
+      console.error("Error creating playlist:", err);
+    }
   };
 
-  const deletePlaylist = (e, id) => {
+  const deletePlaylist = async (e, id) => {
     e.preventDefault(); // Stop routing
     if (!window.confirm("Delete this playlist permanently?")) return;
-    const updated = playlists.filter((pl) => pl.id !== id);
-    setPlaylists(updated);
-    localStorage.setItem("playlists", JSON.stringify(updated));
+    try {
+      await playlistService.deletePlaylist(id);
+      setPlaylists(playlists.filter((pl) => pl.id !== id));
+    } catch (err) {
+      console.error("Error deleting playlist:", err);
+    }
   };
 
-  const renamePlaylist = (e, id, oldName) => {
+  const renamePlaylist = async (e, id, oldName) => {
     e.preventDefault(); // Stop routing
     const newName = window.prompt("Rename playlist to:", oldName);
     if (!newName || !newName.trim()) return;
-    const updated = playlists.map((pl) => (pl.id === id ? { ...pl, name: newName } : pl));
-    setPlaylists(updated);
-    localStorage.setItem("playlists", JSON.stringify(updated));
+    try {
+      const updatedPlaylist = await playlistService.updatePlaylist(id, newName);
+      setPlaylists(playlists.map((pl) => (pl.id === id ? updatedPlaylist : pl)));
+    } catch (err) {
+      console.error("Error renaming playlist:", err);
+    }
   };
 
   return (

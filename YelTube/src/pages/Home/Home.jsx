@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import VideoCard from "../../components/VideoCard/VideoCard";
-import videos from "../../data/videos";
 import shortsData from "../../data/shortsData";
+import videoService from "../../services/videoService";
 
 import {
   FaThumbsUp,
@@ -20,10 +20,15 @@ const Home = ({
   const [allVideos, setAllVideos] = useState([]);
 
   useEffect(() => {
-    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-    const blacklist = JSON.parse(localStorage.getItem("deletedVideoIds")) || [];
-    const combined = [...uploaded, ...videos].filter((v) => !blacklist.includes(v.id));
-    setAllVideos(combined);
+    const fetchVideos = async () => {
+      try {
+        const data = await videoService.getVideos();
+        setAllVideos(data);
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+      }
+    };
+    fetchVideos();
   }, []);
 
   const filteredVideos =

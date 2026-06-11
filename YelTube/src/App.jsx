@@ -79,6 +79,7 @@ const App = () => {
         <Route path="/shorts" element={<Shorts />} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
         <Route path="/channel" element={<Channel />} />
+        <Route path="/channel/:username" element={<Channel />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/history" element={<History />} />

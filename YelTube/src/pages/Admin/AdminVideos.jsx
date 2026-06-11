@@ -1,48 +1,33 @@
 import { useState, useEffect } from "react";
 import "./Admin.css";
-import { FaTrash, FaEye, FaChevronLeft, FaPlayCircle } from "react-icons/fa";
+import { FaTrash, FaChevronLeft, FaPlayCircle } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import staticVideos from "../../data/videos";
+import API from "../../services/api";
 
 const AdminVideos = () => {
   const [videos, setVideos] = useState([]);
 
   useEffect(() => {
-    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-    const all = [...uploaded, ...staticVideos];
-    
-    // De-duplicate by ID
-    const seen = new Set();
-    const unique = all.filter((v) => {
-      if (seen.has(v.id)) return false;
-      seen.add(v.id);
-      return true;
-    });
-
-    setVideos(unique);
+    const fetchVideos = async () => {
+      try {
+        const res = await API.get("admin/videos/");
+        setVideos(res.data || []);
+      } catch (err) {
+        console.error("Error loading admin videos:", err);
+      }
+    };
+    fetchVideos();
   }, []);
 
-  const handleDeleteVideo = (id) => {
+  const handleDeleteVideo = async (id) => {
     if (!window.confirm("Are you sure you want to delete this video? This will remove it from all feeds permanently.")) return;
-
-    // Filter out of local lists
-    const uploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-    const updatedUploaded = uploaded.filter((v) => v.id !== id);
-    localStorage.setItem("uploadedVideos", JSON.stringify(updatedUploaded));
-
-    const my = JSON.parse(localStorage.getItem("myVideos")) || [];
-    const updatedMy = my.filter((v) => v.id !== id);
-    localStorage.setItem("myVideos", JSON.stringify(updatedMy));
-
-    // For static videos, we can store a list of blacklisted video IDs in localStorage
-    const blacklist = JSON.parse(localStorage.getItem("deletedVideoIds")) || [];
-    if (!blacklist.includes(id)) {
-      blacklist.push(id);
-      localStorage.setItem("deletedVideoIds", JSON.stringify(blacklist));
+    try {
+      await API.delete(`admin/videos/${id}/`);
+      setVideos(videos.filter((v) => v.id !== id));
+      alert("Video deleted successfully.");
+    } catch (err) {
+      alert("Failed to delete video: " + (err.response?.data?.error || ""));
     }
-
-    setVideos(videos.filter((v) => v.id !== id));
-    alert("Video deleted successfully.");
   };
 
   return (

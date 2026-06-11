@@ -1,5 +1,6 @@
 import os
 import threading
+import logging
 from django.core.files.base import ContentFile
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -9,10 +10,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .ffmpeg_utils import extract_video_metadata, extract_thumbnail, transcode_video
 
+uploads_logger = logging.getLogger("uploads")
+errors_logger = logging.getLogger("django")
+
 def process_video_in_background(video_id):
+    uploads_logger.info(f"Background processing started for video ID: {video_id}")
     try:
         video = Video.objects.get(pk=video_id)
     except Video.DoesNotExist:
+        errors_logger.error(f"Failed to find video ID: {video_id} for background processing")
         return
         
     video_path = video.video_file.path
@@ -20,11 +26,16 @@ def process_video_in_background(video_id):
     base_name = os.path.splitext(os.path.basename(video_path))[0]
     
     # 1. Extract metadata
-    metadata = extract_video_metadata(video_path)
-    video.duration = metadata.get("duration")
-    video.resolution = metadata.get("resolution")
-    video.file_size = metadata.get("file_size")
-    video.save()
+    try:
+        metadata = extract_video_metadata(video_path)
+        video.duration = metadata.get("duration")
+        video.resolution = metadata.get("resolution")
+        video.file_size = metadata.get("file_size")
+        video.save()
+        uploads_logger.info(f"Metadata extracted successfully for video ID {video_id}: duration={video.duration}, resolution={video.resolution}")
+    except Exception as e:
+        errors_logger.error(f"Error extracting metadata for video ID {video_id}: {e}")
+        metadata = {}
     
     # 2. Extract thumbnail if not manually provided
     if not video.thumbnail:
@@ -36,6 +47,9 @@ def process_video_in_background(video_id):
         if extract_thumbnail(video_path, thumb_path):
             with open(thumb_path, "rb") as f:
                 video.thumbnail.save(thumb_name, ContentFile(f.read()), save=True)
+            uploads_logger.info(f"Thumbnail auto-extracted successfully for video ID {video_id}")
+        else:
+            errors_logger.error(f"Failed to auto-extract thumbnail for video ID {video_id}")
     
     # 3. Transcode to 480p, 720p, 1080p based on original height
     original_height = metadata.get("height") or 0
@@ -51,12 +65,22 @@ def process_video_in_background(video_id):
         res_path = os.path.join(processed_dir, res_name)
         
         if transcode_video(video_path, res_path, height):
+            uploads_logger.info(f"Successfully transcoded video ID {video_id} to {height}p")
             with open(res_path, "rb") as f:
                 res_file = VideoResolutionFile(
                     video=video,
                     resolution=f"{height}p"
                 )
                 res_file.file.save(res_name, ContentFile(f.read()), save=True)
+        else:
+            errors_logger.error(f"Failed to transcode video ID {video_id} to {height}p")
+
+    # 4. Trigger AI Content Moderation Pipeline
+    try:
+        from .moderation_utils import run_ai_moderation_pipeline
+        run_ai_moderation_pipeline(video.id)
+    except Exception as e:
+        errors_logger.error(f"Error running moderation pipeline for video {video.id}: {e}")
 
 class VideoUploadView(
     generics.CreateAPIView
@@ -75,6 +99,7 @@ class VideoUploadView(
         video = serializer.save(
             user=self.request.user
         )
+        uploads_logger.info(f"User '{self.request.user.username}' uploaded video '{video.title}' (ID: {video.id})")
         # Trigger background processing
         thread = threading.Thread(
             target=process_video_in_background,
@@ -82,6 +107,7 @@ class VideoUploadView(
         )
         thread.daemon = True
         thread.start()
+
 
         # Send notification to all subscribers of the creator
         try:
@@ -188,3 +214,44 @@ class VideoReactionToggleView(APIView):
             "dislikes": video.dislikes,
             "user_reaction": user_reaction
         })
+
+from rest_framework import permissions
+
+class AdminVideoListView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        videos = Video.objects.all().order_by("-created_at")
+        data = [{
+            "id": v.id,
+            "title": v.title,
+            "thumbnail": v.thumbnail.url if v.thumbnail else None,
+            "channel": v.user.username,
+            "views": v.views,
+        } for v in videos]
+        return Response(data)
+
+class AdminVideoDeleteView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def delete(self, request, pk):
+        try:
+            video = Video.objects.get(pk=pk)
+        except Video.DoesNotExist:
+            return Response({"error": "Video not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Clean files
+        if video.video_file and os.path.exists(video.video_file.path):
+            try:
+                os.remove(video.video_file.path)
+            except Exception:
+                pass
+        if video.thumbnail and os.path.exists(video.thumbnail.path):
+            try:
+                os.remove(video.thumbnail.path)
+            except Exception:
+                pass
+            
+        video.delete()
+        return Response({"status": "Video deleted by admin"})
+

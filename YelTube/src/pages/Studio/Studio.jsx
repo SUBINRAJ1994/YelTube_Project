@@ -1,5 +1,5 @@
 import "./Studio.css";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   FaVideo,
   FaEye,
@@ -20,91 +20,8 @@ import {
   FaStar,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
-
-/* ─── helpers ─── */
-const loadVideos = () => {
-  const a = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-  const b = JSON.parse(localStorage.getItem("myVideos")) || [];
-  const seen = new Set();
-  const all = [...a, ...b].filter((v) => {
-    if (seen.has(v.id)) return false;
-    seen.add(v.id);
-    return true;
-  });
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser) return [];
-
-  let userVideos = all.filter((v) => v.channel === currentUser.name);
-
-  // Seed mock videos if the creator has no uploads yet to show a gorgeous populated layout
-  if (userVideos.length === 0) {
-    const mockSeed = [
-      {
-        id: 9901,
-        title: "React 19 Advanced Hooks & Concurrent Mode Explained",
-        description: "Deep dive into the upcoming features of React 19, including the new useActionState, useFormStatus, and server components.",
-        category: "Programming",
-        thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=500&auto=format&fit=crop&q=60",
-        videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-        channel: currentUser.name,
-        channelLogo: localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || "https://i.pravatar.cc/40",
-        views: "15,240 views",
-        likes: 1245,
-        time: "3 days ago",
-        duration: "12:34",
-        youtubeId: "dQw4w9WgXcQ",
-        moderationStatus: "ALLOW",
-        uploadedAt: new Date(Date.now() - 3600000 * 24 * 3).toISOString(),
-        size: "45 MB"
-      },
-      {
-        id: 9902,
-        title: "Building a Glassmorphic Creator Studio Dashboard with CSS Grid",
-        description: "Learn how to build stunning dashboards with modern typography, harmonic HSL palettes, and fluid responsive design.",
-        category: "Tutorial",
-        thumbnail: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&auto=format&fit=crop&q=60",
-        videoUrl: "https://www.w3schools.com/html/movie.mp4",
-        channel: currentUser.name,
-        channelLogo: localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || "https://i.pravatar.cc/40",
-        views: "8,912 views",
-        likes: 680,
-        time: "1 week ago",
-        duration: "8:15",
-        youtubeId: "dQw4w9WgXcQ",
-        moderationStatus: "ALLOW",
-        uploadedAt: new Date(Date.now() - 3600000 * 24 * 7).toISOString(),
-        size: "28 MB"
-      }
-    ];
-    const newUploaded = [...mockSeed, ...a];
-    localStorage.setItem("uploadedVideos", JSON.stringify(newUploaded));
-    userVideos = mockSeed;
-  }
-
-  return userVideos;
-};
-
-const saveVideos = (arr) => {
-  const allUploaded = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  if (!currentUser) return;
-
-  const nonUserVideos = allUploaded.filter((v) => v.channel !== currentUser.name);
-  const merged = [...arr, ...nonUserVideos];
-  
-  localStorage.setItem("uploadedVideos", JSON.stringify(merged));
-  localStorage.setItem("myVideos", JSON.stringify(arr));
-};
-
-const loadAllComments = (videos) => {
-  const all = [];
-  videos.forEach((v) => {
-    const c = JSON.parse(localStorage.getItem(`comments_${v.id}`)) || [];
-    c.forEach((cm) => all.push({ ...cm, videoTitle: v.title, videoId: v.id }));
-  });
-  return all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-};
+import videoService from "../../services/videoService";
+import commentService from "../../services/commentService";
 
 /* ─── fake analytics data ─── */
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
@@ -121,7 +38,35 @@ const TABS = [
 const Studio = () => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [videos, setVideos]       = useState(loadVideos);
+  const [videos, setVideos]       = useState([]);
+  const [allComments, setComments] = useState([]);
+  const [analytics, setAnalytics] = useState({
+    total_videos: 0,
+    total_views: 0,
+    total_likes: 0,
+    total_comments: 0,
+    total_subscribers: 0,
+  });
+
+  const loadData = async () => {
+    try {
+      const vData = await videoService.getStudioVideos();
+      const vList = Array.isArray(vData) ? vData : (vData.results || []);
+      setVideos(vList);
+
+      const analData = await videoService.getStudioAnalytics();
+      setAnalytics(analData);
+
+      const commData = await commentService.getCreatorComments();
+      setComments(commData);
+    } catch (err) {
+      console.error("Error fetching studio data:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   /* ── stats ── */
   const parseViews = (views) => {
@@ -147,17 +92,10 @@ const Studio = () => {
     return parseFloat(duration) || 0;
   };
 
-  const totalViews  = videos.reduce((s, v) => s + parseViews(v.views), 0);
-  const totalLikes  = videos.reduce((s, v) => s + (v.likes  || 0), 0);
-
-  const emailKey = currentUser ? currentUser.email.replace(/[@.]/g, "_") : "";
-  const subscribers = parseInt(localStorage.getItem(`subs_count_${emailKey}`)) || (() => {
-    const defaultSubs = Math.floor(Math.random() * 2500) + 340;
-    if (currentUser) {
-      localStorage.setItem(`subs_count_${emailKey}`, defaultSubs);
-    }
-    return defaultSubs;
-  })();
+  const totalViews = analytics.total_views;
+  const totalLikes = analytics.total_likes;
+  const subscribers = analytics.total_subscribers;
+  const totalVideos = analytics.total_videos;
 
   const watchMins = Math.round(videos.reduce((s, v) => s + parseDurationMins(v.duration), 0) * totalViews * 0.65);
   const watchVal = watchMins >= 60 
@@ -176,7 +114,7 @@ const Studio = () => {
   const WATCH_DATA = VIEWS_DATA.map(v => Math.round(v * 4.5));
 
   const statsCards = [
-    { icon: <FaVideo />,    label: "Total Videos", value: videos.length,               color: "#6c63ff" },
+    { icon: <FaVideo />,    label: "Total Videos", value: totalVideos,                  color: "#6c63ff" },
     { icon: <FaEye />,      label: "Total Views",  value: totalViews.toLocaleString(), color: "#00bcd4" },
     { icon: <FaThumbsUp />, label: "Total Likes",  value: totalLikes.toLocaleString(), color: "#ff4081" },
     { icon: <FaUsers />,    label: "Subscribers",  value: subscribers.toLocaleString(),color: "#4caf50" },
@@ -194,20 +132,42 @@ const Studio = () => {
   const startEditTitle = (v) => { setEditingId(v.id);   setEditTitle(v.title); };
   const startEditDesc  = (v) => { setEditingDesc(v.id); setEditDesc(v.description || ""); };
 
-  const saveTitle = (id) => {
-    const updated = videos.map((v) => v.id === id ? { ...v, title: editTitle } : v);
-    setVideos(updated); saveVideos(updated); setEditingId(null);
+  const saveTitle = async (id) => {
+    try {
+      const formData = new FormData();
+      formData.append("title", editTitle);
+      const updatedVideo = await videoService.updateStudioVideo(id, formData);
+      setVideos(videos.map((v) => v.id === id ? updatedVideo : v));
+      setEditingId(null);
+    } catch (err) {
+      console.error("Error saving title:", err);
+    }
   };
 
-  const saveDesc = (id) => {
-    const updated = videos.map((v) => v.id === id ? { ...v, description: editDesc } : v);
-    setVideos(updated); saveVideos(updated); setEditingDesc(null);
+  const saveDesc = async (id) => {
+    try {
+      const formData = new FormData();
+      formData.append("description", editDesc);
+      const updatedVideo = await videoService.updateStudioVideo(id, formData);
+      setVideos(videos.map((v) => v.id === id ? updatedVideo : v));
+      setEditingDesc(null);
+    } catch (err) {
+      console.error("Error saving description:", err);
+    }
   };
 
-  const deleteVideo = (id) => {
+  const deleteVideo = async (id) => {
     if (!window.confirm("Delete this video? This cannot be undone.")) return;
-    const updated = videos.filter((v) => v.id !== id);
-    setVideos(updated); saveVideos(updated);
+    try {
+      await videoService.deleteStudioVideo(id);
+      setVideos(videos.filter((v) => v.id !== id));
+      setAnalytics((prev) => ({
+        ...prev,
+        total_videos: prev.total_videos - 1,
+      }));
+    } catch (err) {
+      console.error("Error deleting video:", err);
+    }
   };
 
   const handleThumbClick = (id) => {
@@ -215,28 +175,30 @@ const Studio = () => {
     thumbInputRef.current?.click();
   };
 
-  const handleThumbChange = (e) => {
+  const handleThumbChange = async (e) => {
     const file = e.target.files[0];
     if (!file || !thumbTarget) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const updated = videos.map((v) =>
-        v.id === thumbTarget ? { ...v, thumbnail: ev.target.result } : v
-      );
-      setVideos(updated); saveVideos(updated);
+    try {
+      const formData = new FormData();
+      formData.append("thumbnail", file);
+      const updatedVideo = await videoService.updateStudioVideo(thumbTarget, formData);
+      setVideos(videos.map((v) => v.id === thumbTarget ? updatedVideo : v));
+    } catch (err) {
+      console.error("Error updating thumbnail:", err);
+    } finally {
       setThumbTarget(null);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   /* ── Comments ── */
-  const allComments = loadAllComments(videos);
-
-  const deleteComment = (videoId, commentId) => {
-    const key  = `comments_${videoId}`;
-    const curr = JSON.parse(localStorage.getItem(key)) || [];
-    localStorage.setItem(key, JSON.stringify(curr.filter((c) => c.id !== commentId)));
-    setVideos([...videos]); // trigger re-render
+  const deleteComment = async (commentId) => {
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      await commentService.deleteComment(commentId);
+      setComments(allComments.filter((c) => c.id !== commentId));
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+    }
   };
 
   /* ── Revenue (demo) ── */
@@ -640,7 +602,7 @@ const Studio = () => {
                     <button
                       className="action-icon-btn delete cm-delete"
                       title="Delete comment"
-                      onClick={() => deleteComment(cm.videoId, cm.id)}
+                      onClick={() => deleteComment(cm.id)}
                     >
                       <FaTrash />
                     </button>

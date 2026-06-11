@@ -52,4 +52,11 @@ from permissions import IsCommentOwnerOrVideoOwnerOrReadOnly
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [IsAuthenticated, IsCommentOwnerOrVideoOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsCommentOwnerOrVideoOwnerOrReadOnly]
+
+class CreatorCommentsListView(generics.ListAPIView):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Comment.objects.filter(video__user=self.request.user).order_by("-created_at")

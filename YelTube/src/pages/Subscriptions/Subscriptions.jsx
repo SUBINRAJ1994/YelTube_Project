@@ -1,50 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaBell, FaCheck, FaTimes, FaPlay } from "react-icons/fa";
-import mockVideos from "../../data/videos";
 import "./Subscriptions.css";
+import videoService from "../../services/videoService";
 
 const Subscriptions = () => {
   const [activeChip, setActiveChip] = useState("All");
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [videos, setVideos] = useState([]);
 
-  // Load subscriptions (array of channel names)
-  const subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
+  const loadData = async () => {
+    try {
+      const subs = await videoService.getSubscriptions();
+      setSubscriptions(subs);
+      const vids = await videoService.getVideos();
+      setVideos(vids);
+    } catch (err) {
+      console.error("Error loading subscriptions feed:", err);
+    }
+  };
 
-  // Load custom uploads
-  const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-
-  // Combine mock videos and uploaded videos
-  // Filter out any banned/deleted videos
-  const deletedVideoIds = JSON.parse(localStorage.getItem("deletedVideoIds")) || [];
-  const allVideos = [...uploadedVideos, ...mockVideos].filter(
-    (video) => !deletedVideoIds.includes(video.id)
-  );
+  useEffect(() => {
+    loadData();
+  }, []);
 
   // Filter videos from subscribed channels
-  const subscribedVideos = allVideos.filter((video) =>
-    subscriptions.includes(video.channel)
+  const subscribedVideos = videos.filter((video) =>
+    subscriptions.some((sub) => sub.channel_details.username === video.channel)
   );
 
   // Map simulated timestamps/order for sorting
   const getSortScore = (video) => {
-    // Custom uploaded videos have id as timestamp (recent)
-    if (video.id > 1700000000000) {
-      return video.id; // actual epoch timestamp
+    if (video.created_at) {
+      return new Date(video.created_at).getTime();
     }
-    // Parse mock time strings
-    const timeStr = video.time || "";
-    if (timeStr.includes("hour") || timeStr.includes("minute") || timeStr.includes("now")) {
-      return Date.now() - 3600000; // Today
-    }
-    if (timeStr.includes("day")) {
-      const days = parseInt(timeStr) || 1;
-      return Date.now() - days * 24 * 3600 * 1000;
-    }
-    if (timeStr.includes("week")) {
-      const weeks = parseInt(timeStr) || 1;
-      return Date.now() - weeks * 7 * 24 * 3600 * 1000;
-    }
-    return 0; // Old
+    return 0;
   };
 
   // Sort by newest first
@@ -56,23 +46,26 @@ const Subscriptions = () => {
     const timeStr = video.time || "";
     if (activeChip === "Today") {
       return (
-        timeStr.includes("hour") ||
-        timeStr.includes("minute") ||
-        timeStr.includes("now") ||
-        (timeStr.includes("day") && parseInt(timeStr) <= 1)
+        timeStr.includes("m ago") ||
+        timeStr.includes("h ago") ||
+        timeStr === "Just now" ||
+        timeStr === "Yesterday"
       );
     }
     if (activeChip === "This Week") {
-      return !timeStr.includes("month") && !timeStr.includes("year") && (!timeStr.includes("week") || parseInt(timeStr) <= 1);
+      return !timeStr.includes("/") && !timeStr.includes("d ago") || (timeStr.includes("d ago") && parseInt(timeStr) <= 7);
     }
     return true;
   });
 
-  const unsubscribeChannel = (channelName) => {
+  const unsubscribeChannel = async (channelId, channelName) => {
     if (window.confirm(`Unsubscribe from ${channelName}?`)) {
-      const updated = subscriptions.filter((sub) => sub !== channelName);
-      localStorage.setItem("subscriptions", JSON.stringify(updated));
-      window.location.reload();
+      try {
+        await videoService.toggleSubscription(channelId);
+        setSubscriptions(subscriptions.filter((sub) => sub.channel_details.id !== channelId));
+      } catch (err) {
+        console.error("Error unsubscribing:", err);
+      }
     }
   };
 
@@ -96,19 +89,19 @@ const Subscriptions = () => {
           <div className="subscribed-channels-carousel">
             <h3>Subscribed Channels ({subscriptions.length})</h3>
             <div className="channels-scroll-row">
-              {subscriptions.map((channel, i) => (
+              {subscriptions.map((sub, i) => (
                 <div key={i} className="channel-avatar-card">
                   <div className="avatar-wrapper">
-                    <img src={getAvatarUrl(channel)} alt={channel} className="channel-avatar-img" />
+                    <img src={sub.channel_details.profile_pic || getAvatarUrl(sub.channel_details.username)} alt={sub.channel_details.username} className="channel-avatar-img" />
                     <button
                       className="unsub-icon-btn"
-                      onClick={() => unsubscribeChannel(channel)}
+                      onClick={() => unsubscribeChannel(sub.channel_details.id, sub.channel_details.username)}
                       title="Unsubscribe"
                     >
                       <FaTimes />
                     </button>
                   </div>
-                  <span className="channel-avatar-name">{channel}</span>
+                  <span className="channel-avatar-name">{sub.channel_details.username}</span>
                 </div>
               ))}
             </div>

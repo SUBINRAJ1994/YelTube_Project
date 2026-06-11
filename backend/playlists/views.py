@@ -69,3 +69,14 @@ class PlaylistVideoRemoveView(APIView):
             return Response({"status": "Video removed from playlist"})
         else:
             return Response({"error": "Video not found in playlist"}, status=status.HTTP_404_NOT_FOUND)
+
+class SearchPlaylistsView(generics.ListAPIView):
+    serializer_class = PlaylistSerializer
+    permission_classes = []
+
+    def get_queryset(self):
+        query = self.request.GET.get("search", "")
+        if not query:
+            return Playlist.objects.none()
+        return Playlist.objects.filter(title__icontains=query, is_private=False).order_by("-updated_at")
+

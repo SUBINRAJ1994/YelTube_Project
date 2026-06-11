@@ -8,7 +8,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return getattr(obj, "user", None) == request.user
+        return getattr(obj, "user", None) == request.user or (request.user and request.user.is_staff)
 
 class IsCommentOwnerOrVideoOwnerOrReadOnly(permissions.BasePermission):
     """
@@ -17,6 +17,8 @@ class IsCommentOwnerOrVideoOwnerOrReadOnly(permissions.BasePermission):
     """
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
+            return True
+        if request.user and request.user.is_staff:
             return True
         if request.method == "DELETE":
             return obj.user == request.user or obj.video.user == request.user

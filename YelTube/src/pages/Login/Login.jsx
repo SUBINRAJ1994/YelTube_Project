@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./Login.css";
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebook } from "react-icons/fa";
+import authService from "../../services/authService";
 
 const Login = () => {
   const [mode, setMode] = useState("login"); // "login", "signup", or "forgot"
@@ -10,9 +11,12 @@ const Login = () => {
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
 
+
+
   // Sign Up state
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
+  const [signupDateOfBirth, setSignupDateOfBirth] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -32,7 +36,7 @@ const Login = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!loginEmail || !loginPassword) {
       alert("Please fill all fields");
       return;
@@ -41,41 +45,18 @@ const Login = () => {
       alert("Please enter a valid email address.");
       return;
     }
-
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const savedUser = users.find((u) => u.email === loginEmail && u.password === loginPassword);
-
-    if (savedUser) {
-      if (savedUser.banned) {
-        alert("This account has been banned by the administrator.");
-        return;
-      }
-      localStorage.setItem("currentUser", JSON.stringify(savedUser));
-      localStorage.setItem("isLoggedIn", "true");
+    try {
+      await authService.login(loginEmail, loginPassword);
       alert("Login successful!");
       window.location.href = "/";
-    } else {
-      // Fallback for legacy single user
-      const storedData = localStorage.getItem("yeltubeUser");
-      const legacyUser = storedData ? JSON.parse(storedData) : null;
-      if (
-        legacyUser &&
-        legacyUser.email === loginEmail &&
-        legacyUser.password === loginPassword
-      ) {
-        localStorage.setItem("currentUser", JSON.stringify(legacyUser));
-        localStorage.setItem("isLoggedIn", "true");
-        alert("Login successful!");
-        window.location.href = "/";
-      } else {
-        alert("Invalid email or password");
-      }
+    } catch (err) {
+      alert(err.response?.data?.detail || "Invalid email or password");
     }
   };
 
-  const handleSignup = () => {
-    if (!signupName || !signupEmail || !signupPassword || !signupConfirm) {
-      alert("Please fill all fields");
+  const handleSignup = async () => {
+    if (!signupName || !signupEmail || !signupPassword || !signupConfirm || !signupDateOfBirth) {
+      alert("Please fill all fields, including Date of Birth.");
       return;
     }
     if (!isValidEmail(signupEmail)) {
@@ -90,33 +71,17 @@ const Login = () => {
       alert("Passwords do not match");
       return;
     }
-
-    const newUser = {
-      name: signupName,
-      email: signupEmail,
-      password: signupPassword,
-      banned: false,
-      warnings: 0,
-      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(signupName)}&background=random&color=fff`
-    };
-    
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    if (users.some((u) => u.email === signupEmail)) {
-      alert("Email already registered!");
-      return;
+    try {
+      await authService.register(signupName, signupEmail, signupPassword, signupDateOfBirth);
+      alert("Account created successfully! Please log in.");
+      setMode("login");
+    } catch (err) {
+      alert(JSON.stringify(err.response?.data) || "Registration failed");
     }
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-
-    localStorage.setItem("yeltubeUser", JSON.stringify(newUser));
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
-    localStorage.setItem("isLoggedIn", "true");
-    alert("Account created! Welcome, " + signupName + "!");
-    window.location.href = "/";
   };
 
   // Forgot password flows
-  const handleSendResetCode = () => {
+  const handleSendResetCode = async () => {
     if (!forgotEmail) {
       alert("Please enter your email");
       return;
@@ -125,29 +90,24 @@ const Login = () => {
       alert("Please enter a valid email address");
       return;
     }
-
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const userExists = users.some((u) => u.email === forgotEmail);
-    const legacyUser = JSON.parse(localStorage.getItem("yeltubeUser"));
-    const legacyExists = legacyUser && legacyUser.email === forgotEmail;
-
-    if (userExists || legacyExists) {
-      alert("Demo Mode: Reset code sent! Enter '123456' to proceed.");
+    try {
+      const res = await authService.forgotPassword(forgotEmail);
+      alert(res.message + (res.token ? `\nToken (for testing): ${res.token}` : ""));
       setForgotStep("code");
-    } else {
-      alert("This email is not registered with YelTube.");
+    } catch (err) {
+      alert(err.response?.data?.error || "Error generating reset token.");
     }
   };
 
   const handleVerifyCode = () => {
-    if (resetCode === "123456") {
+    if (resetCode) {
       setForgotStep("reset");
     } else {
-      alert("Invalid verification code. Enter '123456' for verification.");
+      alert("Please enter the reset token.");
     }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     if (!newPassword || !confirmNewPassword) {
       alert("Please fill all fields");
       return;
@@ -160,55 +120,33 @@ const Login = () => {
       alert("Passwords do not match");
       return;
     }
-
-    // Update in users
-    let users = JSON.parse(localStorage.getItem("users")) || [];
-    users = users.map((u) => {
-      if (u.email === forgotEmail) {
-        return { ...u, password: newPassword };
-      }
-      return u;
-    });
-    localStorage.setItem("users", JSON.stringify(users));
-
-    // Update legacy yeltubeUser
-    const legacyUser = JSON.parse(localStorage.getItem("yeltubeUser"));
-    if (legacyUser && legacyUser.email === forgotEmail) {
-      legacyUser.password = newPassword;
-      localStorage.setItem("yeltubeUser", JSON.stringify(legacyUser));
+    try {
+      await authService.resetPassword(resetCode, newPassword);
+      alert("Password reset successfully! You can now log in.");
+      setMode("login");
+      setForgotStep("email");
+      setForgotEmail("");
+      setResetCode("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err) {
+      alert(err.response?.data?.error || "Reset failed");
     }
-
-    alert("Password reset successfully! You can now log in.");
-    setMode("login");
-    setForgotStep("email");
-    setForgotEmail("");
-    setResetCode("");
-    setNewPassword("");
-    setConfirmNewPassword("");
   };
 
-  // Mock social logins
-  const handleSocialLogin = (provider) => {
-    const mockUser = {
-      name: `${provider} User`,
-      email: `${provider.toLowerCase()}user@example.com`,
-      banned: false,
-      warnings: 0,
-      avatar: provider === "Google" 
-        ? "https://lh3.googleusercontent.com/a/default-user=s40-c" 
-        : "https://graph.facebook.com/v10.0/100000000000000/picture?type=square"
-    };
-
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    if (!users.some(u => u.email === mockUser.email)) {
-      users.push(mockUser);
-      localStorage.setItem("users", JSON.stringify(users));
+  const handleSocialLogin = async (provider) => {
+    const mockOAuthToken = `mock_${provider.toLowerCase()}_token_${provider.toLowerCase()}user@example.com`;
+    try {
+      if (provider === "Google") {
+        await authService.googleLogin(mockOAuthToken);
+      } else {
+        await authService.facebookLogin(mockOAuthToken);
+      }
+      alert(`Successfully signed in with ${provider}!`);
+      window.location.href = "/";
+    } catch (err) {
+      alert(`Error logging in with ${provider}: ${err.response?.data?.error || "OAuth failed"}`);
     }
-
-    localStorage.setItem("currentUser", JSON.stringify(mockUser));
-    localStorage.setItem("isLoggedIn", "true");
-    alert(`Successfully signed in with ${provider}!`);
-    window.location.href = "/";
   };
 
   return (
@@ -299,7 +237,7 @@ const Login = () => {
             <div className="input-group">
               <input
                 type="text"
-                placeholder="Full name"
+                placeholder="Full name (Username)"
                 value={signupName}
                 onChange={(e) => setSignupName(e.target.value)}
               />
@@ -311,6 +249,16 @@ const Login = () => {
                 placeholder="Email address"
                 value={signupEmail}
                 onChange={(e) => setSignupEmail(e.target.value)}
+              />
+            </div>
+            
+            <div className="input-group">
+              <input
+                type="date"
+                placeholder="Date of Birth"
+                value={signupDateOfBirth}
+                onChange={(e) => setSignupDateOfBirth(e.target.value)}
+                title="Date of Birth"
               />
             </div>
             
@@ -368,7 +316,7 @@ const Login = () => {
             
             {forgotStep === "email" && (
               <>
-                <p className="auth-subtitle">Enter your email to receive a password reset code</p>
+                <p className="auth-subtitle">Enter your email to receive a password reset link</p>
                 <div className="input-group">
                   <input
                     type="email"
@@ -386,18 +334,18 @@ const Login = () => {
 
             {forgotStep === "code" && (
               <>
-                <p className="auth-subtitle">We sent a verification code to {forgotEmail}.</p>
+                <p className="auth-subtitle">Enter the password reset token generated by the server.</p>
                 <div className="input-group">
                   <input
                     type="text"
-                    placeholder="Verification code (Enter 123456)"
+                    placeholder="Verification token"
                     value={resetCode}
                     onChange={(e) => setResetCode(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleVerifyCode()}
                   />
                 </div>
                 <button className="submit-btn" onClick={handleVerifyCode}>
-                  Verify Code
+                  Verify Token
                 </button>
               </>
             )}

@@ -25,3 +25,11 @@ class NotificationMarkReadView(APIView):
         else:
             Notification.objects.filter(receiver=request.user, is_read=False).update(is_read=True)
             return Response({"status": "All notifications marked as read"})
+
+class NotificationDeleteView(generics.DestroyAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(receiver=self.request.user)

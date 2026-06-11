@@ -87,3 +87,65 @@ def transcode_video(video_path, output_path, target_height):
     except Exception as e:
         print(f"Error transcoding {video_path} to {target_height}p: {e}")
         return False
+
+def extract_key_frames(video_path, output_dir, count=3):
+    """
+    Extracts a specified number of keyframes from a video at regular intervals using ffmpeg.
+    """
+    try:
+        # First get duration
+        metadata = extract_video_metadata(video_path)
+        duration = metadata.get("duration") or 10.0
+        
+        interval = duration / (count + 1)
+        os.makedirs(output_dir, exist_ok=True)
+        
+        extracted_paths = []
+        for i in range(1, count + 1):
+            timestamp = i * interval
+            h = int(timestamp // 3600)
+            m = int((timestamp % 3600) // 60)
+            s = timestamp % 60
+            time_str = f"{h:02d}:{m:02d}:{s:06.3f}"
+            
+            output_path = os.path.join(output_dir, f"frame_{i}.jpg")
+            cmd = [
+                "ffmpeg",
+                "-y",
+                "-ss", time_str,
+                "-i", video_path,
+                "-vframes", "1",
+                "-q:v", "2",
+                output_path
+            ]
+            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+            if os.path.exists(output_path):
+                extracted_paths.append(output_path)
+        return extracted_paths
+    except Exception as e:
+        print(f"Error extracting keyframes from {video_path}: {e}")
+        return []
+
+def extract_audio_stream(video_path, output_audio_path):
+    """
+    Extracts the audio track from a video file as an MP3/WAV file using ffmpeg.
+    """
+    try:
+        os.makedirs(os.path.dirname(output_audio_path), exist_ok=True)
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", video_path,
+            "-vn",
+            "-acodec", "libmp3lame",
+            "-ar", "44100",
+            "-ac", "2",
+            "-ab", "192k",
+            output_audio_path
+        ]
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return os.path.exists(output_audio_path)
+    except Exception as e:
+        print(f"Error extracting audio from {video_path}: {e}")
+        return False
+

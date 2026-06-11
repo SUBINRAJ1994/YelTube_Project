@@ -1,23 +1,47 @@
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaTrash, FaHistory } from "react-icons/fa";
 import "./WatchHistory.css";
+import videoService from "../../services/videoService";
 
 const WatchHistory = () => {
-  const [historyVideos, setHistoryVideos] = useState(() => {
-    return JSON.parse(localStorage.getItem("watchHistory")) || [];
-  });
+  const [historyVideos, setHistoryVideos] = useState([]);
 
-  const clearHistory = () => {
-    if (!window.confirm("Are you sure you want to clear your entire watch history?")) return;
-    localStorage.removeItem("watchHistory");
-    setHistoryVideos([]);
+  const fetchHistory = async () => {
+    try {
+      const data = await videoService.getWatchHistory();
+      setHistoryVideos(
+        (data || []).map((h) => ({
+          ...h.video,
+          historyId: h.id,
+        }))
+      );
+    } catch (err) {
+      console.error("Error loading watch history:", err);
+    }
   };
 
-  const removeVideo = (id) => {
-    const updated = historyVideos.filter((v) => v.id !== id);
-    setHistoryVideos(updated);
-    localStorage.setItem("watchHistory", JSON.stringify(updated));
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const clearHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear your entire watch history?")) return;
+    try {
+      await videoService.clearWatchHistory();
+      setHistoryVideos([]);
+    } catch (err) {
+      console.error("Error clearing history:", err);
+    }
+  };
+
+  const removeVideo = async (historyId) => {
+    try {
+      await videoService.removeFromWatchHistory(historyId);
+      setHistoryVideos(historyVideos.filter((v) => v.historyId !== historyId));
+    } catch (err) {
+      console.error("Error removing from history:", err);
+    }
   };
 
   return (
@@ -42,7 +66,7 @@ const WatchHistory = () => {
       ) : (
         <div className="history-list">
           {historyVideos.map((video) => (
-            <div className="history-card" key={video.id}>
+            <div className="history-card" key={video.historyId}>
               <Link to={`/watch/${video.id}`} className="history-link">
                 <img src={video.thumbnail} alt={video.title} />
                 <div className="history-info">
@@ -53,7 +77,7 @@ const WatchHistory = () => {
               </Link>
               <button
                 className="remove-btn"
-                onClick={() => removeVideo(video.id)}
+                onClick={() => removeVideo(video.historyId)}
                 title="Remove from history"
               >
                 <FaTrash /> Remove

@@ -1,10 +1,13 @@
 import { useParams, Link } from "react-router-dom";
-import videos from "../../data/videos";
 import "./Watch.css";
 import { FaThumbsUp, FaThumbsDown, FaShare, FaClock, FaList, FaEdit, FaTrash, FaReply, FaFlag, FaCog } from "react-icons/fa";
 import { useEffect, useState, useRef } from "react";
 import ShareModal from "../../components/ShareModal/ShareModal";
 import { pushNotification } from "../../utils/notifications";
+import API from "../../services/api";
+import videoService from "../../services/videoService";
+import commentService from "../../services/commentService";
+import playlistService from "../../services/playlistService";
 
 
 
@@ -34,131 +37,124 @@ const formatRelativeTime = (dateString) => {
 
 const Watch = () => {
   const { id } = useParams();
-  const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-  const allVideos = [...uploadedVideos, ...videos];
-  const video = allVideos.find((v) => v.id === parseInt(id, 10));
-  const relatedVideos = allVideos.filter(
-    (item) => video && item.id !== video.id
-  );
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
-  const [likes, setLikes] = useState(() => {
-    if (!video) return 0;
-    const stored = localStorage.getItem(`video_likes_${video.id}`);
-    if (stored !== null) return parseInt(stored, 10);
-    return video.likes || Math.floor(Math.random() * 200) + 12;
-  });
-
-  const [dislikes, setDislikes] = useState(() => {
-    if (!video) return 0;
-    const stored = localStorage.getItem(`video_dislikes_${video.id}`);
-    if (stored !== null) return parseInt(stored, 10);
-    return video.dislikes || Math.floor(Math.random() * 15) + 2;
-  });
-
-  const [liked, setLiked] = useState(() => {
-    if (!currentUser || !video) return false;
-    return localStorage.getItem(`liked_${currentUser.email}_${video.id}`) === "true";
-  });
-
-  const [disliked, setDisliked] = useState(() => {
-    if (!currentUser || !video) return false;
-    return localStorage.getItem(`disliked_${currentUser.email}_${video.id}`) === "true";
-  });
-
-  const [playlists] = useState(
-    JSON.parse(localStorage.getItem("playlists")) || []
-  );
-
+  const [video, setVideo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [relatedVideos, setRelatedVideos] = useState([]);
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+  const [playlists, setPlaylists] = useState([]);
   const [selectedPlaylist, setSelectedPlaylist] = useState("");
-
-  const handleLike = () => {
-    if (!currentUser) {
-      alert("Please log in to like videos.");
-      return;
-    }
-
-    let newLikes = likes;
-    let newDislikes = dislikes;
-    let newLiked = !liked;
-    let newDisliked = disliked;
-
-    if (newLiked) {
-      newLikes += 1;
-      localStorage.setItem(`liked_${currentUser.email}_${video.id}`, "true");
-      
-      pushNotification("likes", `You liked the video: "${video.title}"`);
-      
-      if (disliked) {
-        newDislikes = Math.max(0, newDislikes - 1);
-        newDisliked = false;
-        localStorage.setItem(`disliked_${currentUser.email}_${video.id}`, "false");
-      }
-      
-      // Save to liked videos list
-      let likedList = JSON.parse(localStorage.getItem("likedVideos")) || [];
-      if (!likedList.some(item => item.id === video.id)) {
-        likedList.unshift(video);
-        localStorage.setItem("likedVideos", JSON.stringify(likedList));
-      }
-    } else {
-      newLikes = Math.max(0, newLikes - 1);
-      localStorage.setItem(`liked_${currentUser.email}_${video.id}`, "false");
-      
-      let likedList = JSON.parse(localStorage.getItem("likedVideos")) || [];
-      likedList = likedList.filter(item => item.id !== video.id);
-      localStorage.setItem("likedVideos", JSON.stringify(likedList));
-    }
-
-    setLikes(newLikes);
-    setDislikes(newDislikes);
-    setLiked(newLiked);
-    setDisliked(newDisliked);
-
-    localStorage.setItem(`video_likes_${video.id}`, newLikes);
-    localStorage.setItem(`video_dislikes_${video.id}`, newDislikes);
-  };
-
-  const handleDislike = () => {
-    if (!currentUser) {
-      alert("Please log in to dislike videos.");
-      return;
-    }
-
-    let newLikes = likes;
-    let newDislikes = dislikes;
-    let newLiked = liked;
-    let newDisliked = !disliked;
-
-    if (newDisliked) {
-      newDislikes += 1;
-      localStorage.setItem(`disliked_${currentUser.email}_${video.id}`, "true");
-      
-      if (liked) {
-        newLikes = Math.max(0, newLikes - 1);
-        newLiked = false;
-        localStorage.setItem(`liked_${currentUser.email}_${video.id}`, "false");
-        
-        let likedList = JSON.parse(localStorage.getItem("likedVideos")) || [];
-        likedList = likedList.filter(item => item.id !== video.id);
-        localStorage.setItem("likedVideos", JSON.stringify(likedList));
-      }
-    } else {
-      newDislikes = Math.max(0, newDislikes - 1);
-      localStorage.setItem(`disliked_${currentUser.email}_${video.id}`, "false");
-    }
-
-    setLikes(newLikes);
-    setDislikes(newDislikes);
-    setLiked(newLiked);
-    setDisliked(newDisliked);
-
-    localStorage.setItem(`video_likes_${video.id}`, newLikes);
-    localStorage.setItem(`video_dislikes_${video.id}`, newDislikes);
-  };
   const [subscribed, setSubscribed] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [isMuted, setIsMuted] = useState(false);
+  const videoRef = useRef(null);
+  const playerContainerRef = useRef(null);
+
+  const [ccActive, setCcActive] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [resolution, setResolution] = useState("1080p");
+
+  const handleSpeedChange = (speed) => {
+    setPlaybackSpeed(speed);
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed;
+    }
+    setShowSettingsMenu(false);
+  };
+
+  const handleResolutionChange = (res) => {
+    setResolution(res);
+    alert(`Video quality switched to ${res}`);
+    setShowSettingsMenu(false);
+  };
+
+  const getSubtitles = (time) => {
+    if (time < 3) return "Welcome to the YelTube developer session!";
+    if (time >= 3 && time < 8) return "Here we are demonstrating custom playback controls.";
+    if (time >= 8 && time < 14) return "You can toggle closed captions and change video resolution.";
+    if (time >= 14 && time < 20) return "Select playback speeds or quality from the settings cog.";
+    return "Enjoy watching this video in premium player quality!";
+  };
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTimeUpdate = (e) => {
+    setCurrentTime(e.target.currentTime);
+    localStorage.setItem(`progress_${video.id}`, e.target.currentTime);
+  };
+
+  const handleLoadedMetadata = (e) => {
+    setDuration(e.target.duration);
+    const progress = localStorage.getItem(`progress_${video.id}`);
+    if (progress) {
+      e.target.currentTime = parseFloat(progress);
+      setCurrentTime(parseFloat(progress));
+    }
+  };
+
+  const handleSeek = (e) => {
+    const time = parseFloat(e.target.value);
+    videoRef.current.currentTime = time;
+    setCurrentTime(time);
+  };
+
+  const handleVolumeChange = (e) => {
+    const vol = parseFloat(e.target.value);
+    setVolume(vol);
+    videoRef.current.volume = vol;
+    setIsMuted(vol === 0);
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    if (isMuted) {
+      videoRef.current.volume = volume;
+      setIsMuted(false);
+    } else {
+      videoRef.current.volume = 0;
+      setIsMuted(true);
+    }
+  };
+
+  const skip = (amount) => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + amount));
+  };
+
+  const toggleFullscreen = () => {
+    if (!playerContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      playerContainerRef.current.requestFullscreen().catch(err => {
+        console.error("Fullscreen error:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const formatTime = (timeInSeconds) => {
+    if (isNaN(timeInSeconds)) return "00:00";
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  };
 
   const [comments, setComments] = useState([]);
   const [commentInput, setCommentInput] = useState("");
@@ -167,97 +163,100 @@ const Watch = () => {
   const [editCommentText, setEditCommentText] = useState("");
   const [activeReplyBoxId, setActiveReplyBoxId] = useState(null);
 
-  useEffect(() => {
-    if (!video) return;
-    const key = `comments_${video.id}`;
-    let loaded = JSON.parse(localStorage.getItem(key));
-    if (!loaded || loaded.length === 0) {
-      const defaults = [
-        {
-          id: "c_1",
-          author: "Jane Miller",
-          email: "jane@yeltube.com",
-          avatar: "https://i.pravatar.cc/40?img=5",
-          text: "Very helpful tutorial. Waiting for the next part!",
-          likes: 2,
-          likedBy: [],
-          replies: [
-            {
-              id: "r_1",
-              author: "Code Master",
-              email: "codemaster@yeltube.com",
-              text: "Next part is dropping this Friday!",
-              createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
-            }
-          ],
-          createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-          reported: false
-        },
-        {
-          id: "c_2",
-          author: "Subin Tech",
-          email: "subin@yeltube.com",
-          avatar: "https://i.pravatar.cc/40?img=11",
-          text: "Awesome video 🔥 Thanks for the share!",
-          likes: 5,
-          likedBy: [],
-          replies: [],
-          createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-          reported: false
-        }
-      ];
-      localStorage.setItem(key, JSON.stringify(defaults));
-      loaded = defaults;
-    }
-    setComments(loaded);
-  }, [id, video]);
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  const saveComments = (updated) => {
-    setComments(updated);
-    localStorage.setItem(`comments_${video.id}`, JSON.stringify(updated));
+  useEffect(() => {
+    const fetchVideoData = async () => {
+      setLoading(true);
+      try {
+        const videoData = await videoService.getVideoDetail(id);
+        setVideo(videoData);
+
+        const related = await videoService.getRelatedVideos(id);
+        setRelatedVideos(related);
+
+        const commentList = await commentService.getComments(id);
+        setComments(commentList);
+
+        if (currentUser) {
+          await videoService.addToWatchHistory(id);
+
+          const playlistOpts = await playlistService.getPlaylists();
+          setPlaylists(playlistOpts);
+
+          const subStatus = await videoService.getSubscriptionStatus(videoData.user);
+          setSubscribed(subStatus.status === "subscribed");
+          setSubscriberCount(subStatus.subscriber_count);
+        } else {
+          setSubscriberCount(0);
+        }
+
+        setLikes(videoData.likes || 0);
+        setDislikes(videoData.dislikes || 0);
+        setLiked(videoData.user_reaction === "like");
+        setDisliked(videoData.user_reaction === "dislike");
+
+      } catch (err) {
+        console.error("Error loading video details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVideoData();
+  }, [id]);
+
+  const handleLike = async () => {
+    if (!currentUser) {
+      alert("Please log in to like videos.");
+      return;
+    }
+    try {
+      const data = await videoService.toggleReaction(video.id, "like");
+      setLikes(data.likes);
+      setDislikes(data.dislikes);
+      setLiked(data.user_reaction === "like");
+      setDisliked(data.user_reaction === "dislike");
+      
+      pushNotification("likes", `You liked the video: "${video.title}"`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const addComment = () => {
+  const handleDislike = async () => {
+    if (!currentUser) {
+      alert("Please log in to dislike videos.");
+      return;
+    }
+    try {
+      const data = await videoService.toggleReaction(video.id, "dislike");
+      setLikes(data.likes);
+      setDislikes(data.dislikes);
+      setLiked(data.user_reaction === "like");
+      setDisliked(data.user_reaction === "dislike");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const addComment = async () => {
     if (commentInput.trim() === "") return;
-    
-    const emailKey = currentUser ? currentUser.email.replace(/[@.]/g, "_") : "";
-    const avatar = currentUser ? (localStorage.getItem(`profileImage_${emailKey}`) || "https://i.pravatar.cc/40") : "https://i.pravatar.cc/40";
-    
-    const newComment = {
-      id: "c_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
-      author: currentUser ? currentUser.name : "Anonymous",
-      email: currentUser ? currentUser.email : "",
-      avatar: avatar,
-      text: commentInput,
-      likes: 0,
-      likedBy: [],
-      replies: [],
-      createdAt: new Date().toISOString(),
-      reported: false
-    };
-
-    const updated = [newComment, ...comments];
-    saveComments(updated);
-    
-    pushNotification("comments", `You commented on "${video.title}": "${commentInput.substring(0, 30)}..."`);
-    
-    // Simulate creator reaction after a short delay
-    setTimeout(() => {
-      pushNotification("likes", `${video.channel} liked your comment on "${video.title}"!`);
-    }, 4000);
-
-    setCommentInput("");
+    try {
+      const newComment = await commentService.addComment(video.id, commentInput);
+      setComments([newComment, ...comments]);
+      setCommentInput("");
+      
+      pushNotification("comments", `You commented on "${video.title}": "${commentInput.substring(0, 30)}..."`);
+    } catch (err) {
+      alert("Failed to add comment.");
+    }
   };
 
   const handleLikeComment = (commentId) => {
-    if (!currentUser) {
-      alert("Please login to like comments.");
-      return;
-    }
-    const email = currentUser.email;
-    const updated = comments.map((c) => {
+    setComments(comments.map((c) => {
       if (c.id === commentId) {
         const likedBy = c.likedBy || [];
+        const email = currentUser?.email || "anon";
         if (likedBy.includes(email)) {
           return {
             ...c,
@@ -273,24 +272,22 @@ const Watch = () => {
         }
       }
       return c;
-    });
-    saveComments(updated);
+    }));
   };
 
   const handlePostReply = (commentId) => {
     const text = replyInputs[commentId] || "";
     if (!text.trim()) return;
 
-    const updated = comments.map((c) => {
+    setComments(comments.map((c) => {
       if (c.id === commentId) {
         return {
           ...c,
           replies: [
             ...(c.replies || []),
             {
-              id: "r_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
-              author: currentUser ? currentUser.name : "Anonymous",
-              email: currentUser ? currentUser.email : "",
+              id: "r_" + Date.now(),
+              author: currentUser ? currentUser.username : "Anonymous",
               text: text,
               createdAt: new Date().toISOString(),
             }
@@ -298,9 +295,8 @@ const Watch = () => {
         };
       }
       return c;
-    });
+    }));
 
-    saveComments(updated);
     setReplyInputs({ ...replyInputs, [commentId]: "" });
     setActiveReplyBoxId(null);
   };
@@ -310,50 +306,41 @@ const Watch = () => {
     setEditCommentText(comment.text);
   };
 
-  const handleSaveEdit = (commentId) => {
+  const handleSaveEdit = async (commentId) => {
     if (!editCommentText.trim()) return;
-    const updated = comments.map((c) => {
-      if (c.id === commentId) {
-        return { ...c, text: editCommentText };
-      }
-      return c;
-    });
-    saveComments(updated);
-    setEditingCommentId(null);
-    setEditCommentText("");
+    try {
+      const updatedComment = await commentService.updateComment(commentId, editCommentText);
+      setComments(comments.map(c => c.id === commentId ? { ...c, text: updatedComment.text } : c));
+      setEditingCommentId(null);
+      setEditCommentText("");
+    } catch (err) {
+      alert("Failed to edit comment. " + (err.response?.data?.detail || ""));
+    }
   };
 
-  const handleDeleteComment = (commentId) => {
+  const handleDeleteComment = async (commentId) => {
     if (!window.confirm("Are you sure you want to delete this comment?")) return;
-    const updated = comments.filter((c) => c.id !== commentId);
-    saveComments(updated);
+    try {
+      await commentService.deleteComment(commentId);
+      setComments(comments.filter(c => c.id !== commentId));
+    } catch (err) {
+      alert("Failed to delete comment. " + (err.response?.data?.detail || ""));
+    }
   };
 
-  const handleReportComment = (comment) => {
+  const handleReportComment = async (comment) => {
     if (!window.confirm("Report this comment for spam or abuse?")) return;
-    const updated = comments.map((c) => {
-      if (c.id === comment.id) {
-        return { ...c, reported: true };
-      }
-      return c;
-    });
-    saveComments(updated);
-
-    // Log to adminReports
-    const reports = JSON.parse(localStorage.getItem("adminReports")) || [];
-    const newReport = {
-      id: Date.now(),
-      type: "comment",
-      content: comment.text,
-      reporter: currentUser ? currentUser.name : "Anonymous",
-      targetId: comment.id,
-      videoId: video.id,
-      videoTitle: video.title,
-      createdAt: new Date().toISOString(),
-    };
-    reports.push(newReport);
-    localStorage.setItem("adminReports", JSON.stringify(reports));
-    alert("Thank you. This comment has been flagged for administrator review.");
+    try {
+      await API.post("reports/add/", {
+        report_reason: 1,
+        content_type: "comment",
+        object_id: comment.id,
+        description: "Flagged comment from Watch page."
+      });
+      alert("Thank you. This comment has been flagged for administrator review.");
+    } catch (err) {
+      alert("Report failed: " + (err.response?.data?.error || ""));
+    }
   };
 
   useEffect(() => {
@@ -447,112 +434,51 @@ const Watch = () => {
       </div>
     );
   }
-const handleWatchLater = () => {
-  let watchLater = JSON.parse(localStorage.getItem("watchLater")) || [];
-  const alreadyExists = watchLater.some((item) => item.id === video.id);
-  if (alreadyExists){
-    alert("Already added to Watch Later");
-    return;
-  }
-  watchLater.unshift(video);
-  localStorage.setItem("watchLater", JSON.stringify(watchLater));
-  alert("Added to Watch Later");
-}
+  const handleWatchLater = async () => {
+    if (!currentUser) {
+      alert("Please log in to use Watch Later.");
+      return;
+    }
+    try {
+      await videoService.toggleWatchLater(video.id);
+      alert("Watch Later list updated!");
+    } catch (err) {
+      alert("Failed to update Watch Later.");
+    }
+  };
+
   const [showShareModal, setShowShareModal] = useState(false);
   const handleShare = () => {
     setShowShareModal(true);
   };
-const addToPlaylist = () => {
 
-  if (!selectedPlaylist) {
-
-    alert("Select a Playlist");
-
-    return;
-
-  }
-
-  let allPlaylists =
-    JSON.parse(
-      localStorage.getItem(
-        "playlists"
-      )
-    ) || [];
-
-  allPlaylists =
-    allPlaylists.map(
-      (playlist) => {
-
-        if (
-          playlist.id ===
-          Number(selectedPlaylist)
-        ) {
-
-          const exists =
-            playlist.videos.some(
-              (item) =>
-                item.id === video.id
-            );
-
-          if (!exists) {
-            playlist.videos.push(video);
-          } else {
-            alert("Video already in playlist");
-          }
-
-        }
-
-        return playlist;
-
-      }
-    );
-
-  localStorage.setItem(
-    "playlists",
-    JSON.stringify(
-      allPlaylists
-    )
-  );
-
-  alert(
-    "Added to Playlist"
-  );
-
-};
-const handleSubscribe = () => {
-  let subscriptions =
-    JSON.parse(
-      localStorage.getItem("subscriptions")
-    ) || [];
-
-  if (!subscribed) {
-    if (!subscriptions.includes(video.channel)) {
-      subscriptions.push(video.channel);
-
-      localStorage.setItem(
-        "subscriptions",
-        JSON.stringify(subscriptions)
-      );
+  const addToPlaylist = async () => {
+    if (!selectedPlaylist) {
+      alert("Select a Playlist");
+      return;
     }
+    try {
+      await playlistService.addVideoToPlaylist(selectedPlaylist, video.id);
+      alert("Added to Playlist!");
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to add to playlist.");
+    }
+  };
 
-    setSubscribed(true);
-    setSubscriberCount((prev) => prev + 1);
-    pushNotification("subscriptions", `You subscribed to ${video.channel}!`);
-  } else {
-    subscriptions = subscriptions.filter(
-      (channel) => channel !== video.channel
-    );
-
-    localStorage.setItem(
-      "subscriptions",
-      JSON.stringify(subscriptions)
-    );
-
-    setSubscribed(false);
-    setSubscriberCount((prev) => prev - 1);
-    pushNotification("subscriptions", `You unsubscribed from ${video.channel}.`);
-  }
-};
+  const handleSubscribe = async () => {
+    if (!currentUser) {
+      alert("Please log in to subscribe.");
+      return;
+    }
+    try {
+      const data = await videoService.toggleSubscription(video.user);
+      setSubscribed(data.status === "subscribed");
+      setSubscriberCount(data.subscriber_count);
+      pushNotification("subscriptions", data.status === "subscribed" ? `You subscribed to ${video.channel}!` : `You unsubscribed from ${video.channel}.`);
+    } catch (err) {
+      alert("Failed to toggle subscription.");
+    }
+  };
   return (
     <div className="watch-page">
       <div className="watch-container">

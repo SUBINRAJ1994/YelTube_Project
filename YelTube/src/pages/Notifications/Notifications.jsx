@@ -1,78 +1,55 @@
 import { useState, useEffect } from "react";
 import "./Notifications.css";
 import { FaBell, FaThumbsUp, FaComment, FaTrash, FaCheck, FaUserPlus, FaEnvelopeOpen } from "react-icons/fa";
-
-const MOCK_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: "subscriptions",
-    message: "Alex subscribed to your channel",
-    read: false,
-    timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
-  },
-  {
-    id: 2,
-    type: "comments",
-    message: "John commented: 'Outstanding explanation of React hooks! Thanks!'",
-    read: false,
-    timestamp: new Date(Date.now() - 3600000 * 5).toISOString(), // 5 hours ago
-  },
-  {
-    id: 3,
-    type: "likes",
-    message: "Emma liked your video: 'Build a YouTube Clone'",
-    read: true,
-    timestamp: new Date(Date.now() - 3600000 * 24).toISOString(), // 1 day ago
-  },
-  {
-    id: 4,
-    type: "subscriptions",
-    message: "Sarah Jenkins subscribed to your channel",
-    read: true,
-    timestamp: new Date(Date.now() - 3600000 * 48).toISOString(), // 2 days ago
-  },
-];
+import notificationService from "../../services/notificationService";
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    const loadNotif = () => {
-      let stored = JSON.parse(localStorage.getItem("notifications"));
-      if (!stored || stored.length === 0) {
-        localStorage.setItem("notifications", JSON.stringify(MOCK_NOTIFICATIONS));
-        stored = MOCK_NOTIFICATIONS;
-      }
-      setNotifications(stored);
-    };
+  const loadNotifications = async () => {
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data);
+    } catch (err) {
+      console.error("Error loading notifications:", err);
+    }
+  };
 
-    loadNotif();
-    window.addEventListener("notifications_updated", loadNotif);
-    return () => window.removeEventListener("notifications_updated", loadNotif);
+  useEffect(() => {
+    loadNotifications();
+    window.addEventListener("notifications_updated", loadNotifications);
+    return () => window.removeEventListener("notifications_updated", loadNotifications);
   }, []);
 
-  const saveNotifications = (updated) => {
-    setNotifications(updated);
-    localStorage.setItem("notifications", JSON.stringify(updated));
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(notifications.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Error marking all as read:", err);
+    }
   };
 
-  const markAllAsRead = () => {
-    const updated = notifications.map((n) => ({ ...n, read: true }));
-    saveNotifications(updated);
+  const markAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications(notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (err) {
+      console.error("Error marking as read:", err);
+    }
   };
 
-  const markAsRead = (id) => {
-    const updated = notifications.map((n) =>
-      n.id === id ? { ...n, read: true } : n
-    );
-    saveNotifications(updated);
-  };
-
-  const deleteNotification = (e, id) => {
+  const deleteNotification = async (e, id) => {
     e.stopPropagation();
-    const updated = notifications.filter((n) => n.id !== id);
-    saveNotifications(updated);
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications(notifications.filter((n) => n.id !== id));
+    } catch (err) {
+      console.error("Error deleting notification:", err);
+    }
   };
 
   const filteredNotifications = notifications.filter((n) => {

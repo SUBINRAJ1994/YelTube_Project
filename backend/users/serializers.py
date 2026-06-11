@@ -13,7 +13,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
-            "password"
+            "password",
+            "date_of_birth"
         ]
 
     def create(self, validated_data):
@@ -22,4 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data["email"],
             password=validated_data["password"]
         )
+        if "date_of_birth" in validated_data:
+            user.date_of_birth = validated_data["date_of_birth"]
+            user.save()
         return user

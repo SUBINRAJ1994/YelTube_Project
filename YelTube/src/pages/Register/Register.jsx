@@ -2,11 +2,14 @@ import "./Register.css";
 import { useState, useRef } from "react";
 import { FaEye, FaEyeSlash, FaGoogle, FaFacebook, FaCamera, FaSignInAlt } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
+import authService from "../../services/authService";
+import videoService from "../../services/videoService";
 
 const Register = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -19,8 +22,8 @@ const Register = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2000000) {
-      alert("Image size should be less than 2MB.");
+    if (file.size > 5000000) {
+      alert("Image size should be less than 5MB.");
       return;
     }
 
@@ -35,13 +38,12 @@ const Register = () => {
     fileInputRef.current.click();
   };
 
-  const handleRegister = () => {
-    if (!name || !email || !password || !confirmPassword) {
-      alert("Please fill all fields");
+  const handleRegister = async () => {
+    if (!name || !email || !password || !confirmPassword || !dateOfBirth) {
+      alert("Please fill all fields, including Date of Birth.");
       return;
     }
     
-    // Email regex validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       alert("Please enter a valid email address.");
@@ -58,64 +60,43 @@ const Register = () => {
       return;
     }
 
-    const finalAvatar = avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&bold=true`;
+    try {
+      // 1. Create account
+      await authService.register(name, email, password, dateOfBirth);
+      
+      // 2. Log in automatically
+      await authService.login(email, password);
 
-    const newUser = {
-      name,
-      email,
-      password,
-      avatar: finalAvatar,
-      banned: false,
-      warnings: 0,
-      createdAt: new Date().toISOString()
-    };
+      // 3. Upload avatar if selected
+      if (avatar) {
+        const blob = await (await fetch(avatar)).blob();
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        const formData = new FormData();
+        formData.append("profile_pic", file);
+        await videoService.updateStudioProfile(formData);
+        await authService.getCurrentUser();
+      }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    if (users.some((u) => u.email === email)) {
-      alert("Email already registered!");
-      return;
+      alert("Registration successful! Welcome to YelTube!");
+      navigate("/");
+    } catch (err) {
+      alert(JSON.stringify(err.response?.data) || "Registration failed");
     }
-
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("yeltubeUser", JSON.stringify(newUser));
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
-    localStorage.setItem("isLoggedIn", "true");
-
-    // Also sync the header/profile image cache key
-    const emailKey = email.replace(/[@.]/g, "_");
-    localStorage.setItem(`profileImage_${emailKey}`, finalAvatar);
-
-    alert("Registration successful! Welcome to YelTube!");
-    navigate("/");
   };
 
-  const handleSocialRegister = (provider) => {
-    const mockUser = {
-      name: `${provider} Creator`,
-      email: `${provider.toLowerCase()}creator@example.com`,
-      avatar: provider === "Google" 
-        ? "https://lh3.googleusercontent.com/a/default-user=s40-c" 
-        : "https://graph.facebook.com/v10.0/100000000000000/picture?type=square",
-      banned: false,
-      warnings: 0,
-      createdAt: new Date().toISOString()
-    };
-
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    if (!users.some(u => u.email === mockUser.email)) {
-      users.push(mockUser);
-      localStorage.setItem("users", JSON.stringify(users));
+  const handleSocialRegister = async (provider) => {
+    const mockOAuthToken = `mock_${provider.toLowerCase()}_token_${provider.toLowerCase()}creator@example.com`;
+    try {
+      if (provider === "Google") {
+        await authService.googleLogin(mockOAuthToken);
+      } else {
+        await authService.facebookLogin(mockOAuthToken);
+      }
+      alert(`Successfully signed up with ${provider}!`);
+      navigate("/");
+    } catch (err) {
+      alert(`Error signing up with ${provider}: ${err.response?.data?.error || "OAuth failed"}`);
     }
-
-    localStorage.setItem("currentUser", JSON.stringify(mockUser));
-    localStorage.setItem("isLoggedIn", "true");
-    
-    const emailKey = mockUser.email.replace(/[@.]/g, "_");
-    localStorage.setItem(`profileImage_${emailKey}`, mockUser.avatar);
-
-    alert(`Successfully signed up with ${provider}!`);
-    navigate("/");
   };
 
   return (
@@ -155,6 +136,7 @@ const Register = () => {
             placeholder="Username"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRegister()}
           />
         </div>
 
@@ -164,6 +146,18 @@ const Register = () => {
             placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRegister()}
+          />
+        </div>
+
+        <div className="input-group">
+          <input
+            type="date"
+            placeholder="Date of Birth"
+            value={dateOfBirth}
+            onChange={(e) => setDateOfBirth(e.target.value)}
+            title="Date of Birth"
+            onKeyDown={(e) => e.key === "Enter" && handleRegister()}
           />
         </div>
 
@@ -173,6 +167,7 @@ const Register = () => {
             placeholder="Password (min 6 chars)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRegister()}
           />
           <span className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
             {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -187,12 +182,12 @@ const Register = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleRegister()}
           />
-          <span className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+          <span className="password-toggle" onClick={() => setShowConfirmPassword(!showConfirmPassword)} onKeyDown={(e) => e.key === "Enter" && handleRegister()}>
             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
           </span>
         </div>
 
-        <button className="register-btn" onClick={handleRegister}>
+        <button className="register-btn" onClick={handleRegister} onKeyDown={(e) => e.key === "Enter" && handleRegister()}>
           Register
         </button>
 

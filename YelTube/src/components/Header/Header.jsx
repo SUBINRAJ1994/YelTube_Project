@@ -17,6 +17,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import staticVideos from "../../data/videos";
+import notificationService from "../../services/notificationService";
 
 function Header({
   toggleSidebar,
@@ -92,9 +93,18 @@ function Header({
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
+  const loadNotifications = async () => {
+    if (!currentUser) return;
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data || []);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+    }
+  };
+
   useEffect(() => {
-    const loadedNotifications = JSON.parse(localStorage.getItem("notifications")) || [];
-    setNotifications(loadedNotifications);
+    loadNotifications();
   }, [showNotifications]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -104,12 +114,15 @@ function Header({
     setShowProfileMenu(false);
   };
 
-  const markAsRead = (id) => {
-    const updated = notifications.map((n) =>
-      n.id === id ? { ...n, read: true } : n
-    );
-    setNotifications(updated);
-    localStorage.setItem("notifications", JSON.stringify(updated));
+  const markAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications(notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
   };
 
   const toggleTheme = () => {

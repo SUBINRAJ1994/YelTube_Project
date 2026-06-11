@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { pushNotification } from "../../utils/notifications";
 import "./Upload.css";
+import videoService from "../../services/videoService";
 
 // Auto-detect language using regex
 const detectLanguages = (text) => {
@@ -245,105 +246,7 @@ const Upload = () => {
     }
   };
 
-  const resumeUploadToCompletion = (startProgress, report) => {
-    let progress = startProgress;
-    const interval = setInterval(() => {
-      progress += 1;
-      setUploadProgress(progress);
-      
-      if (progress < 85) {
-        setUploadStep(`Uploading binary packets... ${progress}%`);
-      } else if (progress >= 85 && progress < 98) {
-        setUploadStep("Processing and caching thumbnail overlays...");
-      } else if (progress >= 98) {
-        setUploadStep("Finalizing content upload...");
-      }
-
-      if (progress >= 100) {
-        clearInterval(interval);
-        setUploading(false);
-
-        const channelName = currentUser ? currentUser.name : "Anonymous Channel";
-
-        const newVideo = {
-          id: Date.now(),
-          title: title,
-          description: description,
-          category: category,
-          thumbnail: thumbnailPreview || "https://picsum.photos/300/200",
-          videoUrl: videoPreview,
-          channel: channelName,
-          channelLogo: localStorage.getItem(`profileImage_${currentUser.email.replace(/[@.]/g, "_")}`) || currentUser.avatar || "https://i.pravatar.cc/40",
-          views: "0 views",
-          time: "Just now",
-          duration: videoDuration || "3:00",
-          youtubeId: "dQw4w9WgXcQ",
-          moderationStatus: report.status,
-          uploadedAt: new Date().toISOString(),
-          size: videoSize || "10 MB"
-        };
-
-        const uploadedVideos = JSON.parse(localStorage.getItem("uploadedVideos")) || [];
-        uploadedVideos.unshift(newVideo);
-        localStorage.setItem("uploadedVideos", JSON.stringify(uploadedVideos));
-
-        const myVideos = JSON.parse(localStorage.getItem("myVideos")) || [];
-        myVideos.unshift(newVideo);
-        localStorage.setItem("myVideos", JSON.stringify(myVideos));
-
-        pushNotification("uploads", `Your video "${title}" has been successfully uploaded, compressed, and published!`);
-
-        const subscriptions = JSON.parse(localStorage.getItem("subscriptions")) || [];
-        if (subscriptions.includes(channelName)) {
-          const notifications = JSON.parse(localStorage.getItem("notifications")) || [];
-          notifications.unshift({
-            id: Date.now(),
-            message: `${channelName} uploaded a new video: "${title}"`,
-            videoId: newVideo.id,
-            time: "Just now",
-            read: false
-          });
-          localStorage.setItem("notifications", JSON.stringify(notifications));
-        }
-
-        if (report.status === "REVIEW") {
-          const reports = JSON.parse(localStorage.getItem("adminReports")) || [];
-          const newReport = {
-            id: Date.now(),
-            type: "video_moderation_review",
-            content: `Video "${title}" was uploaded and flagged for review. Reason: ${report.reason}`,
-            reporter: "YelTube AI Moderation Engine",
-            targetId: newVideo.id,
-            videoId: newVideo.id,
-            videoTitle: newVideo.title,
-            createdAt: new Date().toISOString(),
-          };
-          reports.push(newReport);
-          localStorage.setItem("adminReports", JSON.stringify(reports));
-          alert(`Upload Successful! Note: Video is currently under review by content moderators.`);
-        } else {
-          alert("Upload Successful!");
-        }
-
-        setTitle("");
-        setDescription("");
-        setCategory("");
-        setVideoFile(null);
-        setThumbnail(null);
-        setVideoPreview("");
-        setThumbnailPreview("");
-        setVideoSize("");
-        setVideoDuration("");
-
-        setTimeout(() => {
-          setUploadProgress(0);
-          setUploadStep("");
-        }, 2000);
-      }
-    }, 60);
-  };
-
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (
       !title ||
       !description ||
@@ -356,64 +259,92 @@ const Upload = () => {
     }
 
     if (!videoFile.type.startsWith("video/")) {
-      alert("Please select a valid video");
+      alert("Please select a valid video file");
       return;
     }
 
-    if (videoFile.size > 100000000) {
-      alert("Video size must be below 100MB");
+    if (videoFile.size > 50 * 1024 * 1024) {
+      alert("Video size must be below 50MB");
       return;
     }
 
     setUploading(true);
-    setUploadStep("FFmpeg Init: Loading WebAssembly files...");
+    setUploadProgress(10);
+    setUploadStep("FFmpeg: parsing metadata container...");
 
-    let progress = 0;
+    const report = runModerationEngine(title, description, videoFile, thumbnail);
+    setModerationReport(report);
+
+    if (report.status === "BLOCK") {
+      setUploading(false);
+      setUploadProgress(0);
+      setUploadStep("");
+
+      const dbUser = currentUser ? users.find(u => u.email === currentUser.email) : null;
+      const userWarnings = (currentUser && currentUser.warnings) || (dbUser && dbUser.warnings) || 0;
+      const isRepeatOffender = userWarnings >= 1;
+      const isSevereBan = report.severity === "SEVERE_BAN";
+
+      if (isSevereBan || isRepeatOffender) {
+        banUserPermanently();
+        alert("UPLOAD BLOCKED: Your channel has been permanently suspended for severe policy violations.");
+      } else {
+        setShowWarningModal(true);
+      }
+      return;
+    }
+
+    let progress = 10;
     const interval = setInterval(() => {
-      progress += 1;
-      setUploadProgress(progress);
-
-      if (progress < 15) {
-        setUploadStep("FFmpeg Processing: Parsing container metadata...");
-      } else if (progress >= 15 && progress < 30) {
-        setUploadStep("FFmpeg: extracting audio channel (aac/mp3)...");
-      } else if (progress >= 30 && progress < 55) {
-        if (compressVideo) {
-          setUploadStep(`FFmpeg: Compressing video layout to ${compressionSetting} (libx264 -crf 28)...`);
+      if (progress < 90) {
+        progress += 5;
+        setUploadProgress(progress);
+        if (progress < 30) {
+          setUploadStep("FFmpeg: extracting audio channel (aac/mp3)...");
+        } else if (progress < 60) {
+          setUploadStep(`FFmpeg: Compressing video layout (libx264 -crf 23)...`);
         } else {
-          setUploadStep("FFmpeg: Splitting visual frames...");
-        }
-      } else if (progress >= 55 && progress < 70) {
-        setUploadStep("AI Guard: Analysing speech transcript and metadata...");
-      } else if (progress >= 70 && progress < 80) {
-        setUploadStep("AI Guard: Checking thumbnail visuals...");
-      } else if (progress === 80) {
-        clearInterval(interval);
-        
-        const report = runModerationEngine(title, description, videoFile, thumbnail);
-        setModerationReport(report);
-
-        if (report.status === "BLOCK") {
-          setUploading(false);
-          setUploadProgress(0);
-          setUploadStep("");
-
-          const dbUser = currentUser ? users.find(u => u.email === currentUser.email) : null;
-          const userWarnings = (currentUser && currentUser.warnings) || (dbUser && dbUser.warnings) || 0;
-          const isRepeatOffender = userWarnings >= 1;
-          const isSevereBan = report.severity === "SEVERE_BAN";
-
-          if (isSevereBan || isRepeatOffender) {
-            banUserPermanently();
-            alert("UPLOAD BLOCKED: Your channel has been permanently suspended for severe policy violations.");
-          } else {
-            setShowWarningModal(true);
-          }
-        } else {
-          resumeUploadToCompletion(progress, report);
+          setUploadStep("AI Guard: Analysing speech transcript and metadata...");
         }
       }
-    }, 60);
+    }, 200);
+
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("video_file", videoFile);
+    formData.append("thumbnail", thumbnail);
+
+    try {
+      await videoService.uploadVideo(formData);
+      clearInterval(interval);
+      setUploadProgress(100);
+      setUploadStep("Publishing completed successfully!");
+      
+      pushNotification("uploads", `Your video "${title}" has been successfully uploaded, compressed, and published!`);
+      alert("Upload Successful!");
+
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setVideoFile(null);
+      setThumbnail(null);
+      setVideoPreview("");
+      setThumbnailPreview("");
+      setVideoSize("");
+      setVideoDuration("");
+      setUploading(false);
+
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploadStep("");
+      }, 2000);
+    } catch (err) {
+      clearInterval(interval);
+      setUploading(false);
+      alert(JSON.stringify(err.response?.data) || "Upload failed.");
+    }
   };
 
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";

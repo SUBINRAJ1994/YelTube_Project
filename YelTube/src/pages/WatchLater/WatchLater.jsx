@@ -1,32 +1,31 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
 import "./WatchLater.css";
+import videoService from "../../services/videoService";
 
 const WatchLater = () => {
+  const [watchLaterVideos, setWatchLaterVideos] = useState([]);
 
-  const [watchLaterVideos, setWatchLaterVideos] = useState(() => {
-    return JSON.parse(localStorage.getItem("watchLater")) || [];
-  });
+  const fetchWatchLater = async () => {
+    try {
+      const data = await videoService.getWatchLater();
+      setWatchLaterVideos((data || []).map((wl) => wl.video).filter(Boolean));
+    } catch (err) {
+      console.error("Error loading watch later videos:", err);
+    }
+  };
 
-  const removeVideo = (id) => {
+  useEffect(() => {
+    fetchWatchLater();
+  }, []);
 
-    const updatedVideos =
-      watchLaterVideos.filter(
-        (video) =>
-          video.id !== id
-      );
-
-    setWatchLaterVideos(
-      updatedVideos
-    );
-
-    localStorage.setItem(
-      "watchLater",
-      JSON.stringify(
-        updatedVideos
-      )
-    );
-
+  const removeVideo = async (id) => {
+    try {
+      await videoService.toggleWatchLater(id);
+      setWatchLaterVideos(watchLaterVideos.filter((video) => video.id !== id));
+    } catch (err) {
+      console.error("Error removing video from watch later:", err);
+    }
   };
 
   return (

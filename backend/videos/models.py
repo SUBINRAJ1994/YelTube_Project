@@ -45,6 +45,18 @@ class Video(models.Model):
     duration = models.FloatField(null=True, blank=True)
     resolution = models.CharField(max_length=50, null=True, blank=True)
     file_size = models.BigIntegerField(null=True, blank=True)
+    moderation_status = models.CharField(
+        max_length=20,
+        choices=(
+            ("pending", "Pending"),
+            ("allowed", "Allowed"),
+            ("flagged", "Flagged"),
+            ("rejected", "Rejected"),
+            ("manual_review", "Manual Review"),
+        ),
+        default="pending"
+    )
+    moderation_report = models.TextField(blank=True, default="{}")
 
     def __str__(self):
         return self.title

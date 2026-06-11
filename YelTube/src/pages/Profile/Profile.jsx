@@ -2,10 +2,11 @@ import "./Profile.css";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { FaCamera, FaTimes, FaUserEdit, FaRegSmile, FaCalendarAlt, FaTv } from "react-icons/fa";
+import authService from "../../services/authService";
+import videoService from "../../services/videoService";
 
 const Profile = () => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-  const emailKey = currentUser ? currentUser.email.replace(/[@.]/g, "_") : "";
 
   const [likedVideos, setLikedVideos] = useState([]);
   const [watchLater, setWatchLater] = useState([]);
@@ -22,36 +23,43 @@ const Profile = () => {
   
   // Form input states
   const [avatarInput, setAvatarInput] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
   const [bannerInput, setBannerInput] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
   const [bioInput, setBioInput] = useState("");
   const [usernameInput, setUsernameInput] = useState("");
 
+  const fetchStatsAndProfile = async () => {
+    try {
+      const profile = await authService.getCurrentUser();
+      setUsername(profile.username);
+      setProfileImage(profile.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}&background=random&color=fff&bold=true`);
+      setBannerImage(profile.banner_image || "");
+      setBio(profile.bio || "No bio added yet. Tell the YelTube community about yourself!");
+
+      // Pre-populate input states
+      setAvatarInput(profile.profile_pic || "");
+      setBannerInput(profile.banner_image || "");
+      setBioInput(profile.bio || "No bio added yet. Tell the YelTube community about yourself!");
+      setUsernameInput(profile.username);
+
+      const likedData = await videoService.getVideos();
+      setLikedVideos(likedData.filter(v => v.user_reaction === "like"));
+
+      const wlData = await videoService.getWatchLater();
+      setWatchLater(wlData);
+
+      const historyData = await videoService.getWatchHistory();
+      setWatchHistory(historyData);
+
+    } catch (err) {
+      console.error("Error loading profile details:", err);
+    }
+  };
+
   useEffect(() => {
     if (!currentUser) return;
-    
-    // Load lists
-    setLikedVideos(JSON.parse(localStorage.getItem("likedVideos")) || []);
-    setWatchLater(JSON.parse(localStorage.getItem("watchLater")) || []);
-    setWatchHistory(JSON.parse(localStorage.getItem("watchHistory")) || []);
-
-    // Load custom profile properties
-    const storedAvatar = localStorage.getItem(`profileImage_${emailKey}`);
-    if (storedAvatar) setProfileImage(storedAvatar);
-    else if (currentUser.avatar) setProfileImage(currentUser.avatar);
-
-    const storedBanner = localStorage.getItem(`bannerImage_${emailKey}`);
-    if (storedBanner) setBannerImage(storedBanner);
-
-    const storedBio = localStorage.getItem(`bio_${emailKey}`);
-    if (storedBio) setBio(storedBio);
-
-    setUsername(currentUser.name);
-    
-    // Pre-populate input states
-    setAvatarInput(storedAvatar || currentUser.avatar || "");
-    setBannerInput(storedBanner || "");
-    setBioInput(storedBio || "No bio added yet. Tell the YelTube community about yourself!");
-    setUsernameInput(currentUser.name);
+    fetchStatsAndProfile();
   }, []);
 
   if (!currentUser) {
@@ -68,6 +76,7 @@ const Profile = () => {
   const handleAvatarFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setAvatarInput(ev.target.result);
@@ -78,6 +87,7 @@ const Profile = () => {
   const handleBannerFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setBannerFile(file);
     const reader = new FileReader();
     reader.onload = (ev) => {
       setBannerInput(ev.target.result);
@@ -85,46 +95,37 @@ const Profile = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSaveProfile = () => {
-    if (!usernameInput.trim()) {
-      alert("Username cannot be empty");
-      return;
-    }
-
-    // Save states
-    setProfileImage(avatarInput);
-    setBannerImage(bannerInput);
-    setBio(bioInput);
-    setUsername(usernameInput);
-
-    // Save to localStorage
-    localStorage.setItem(`profileImage_${emailKey}`, avatarInput);
-    localStorage.setItem(`bannerImage_${emailKey}`, bannerInput);
-    localStorage.setItem(`bio_${emailKey}`, bioInput);
-
-    // Update currentUser object
-    const updatedUser = {
-      ...currentUser,
-      name: usernameInput,
-      avatar: avatarInput,
-    };
-    localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-
-    // Update in users array
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const updatedUsers = users.map((u) => {
-      if (u.email === currentUser.email) {
-        return { ...u, name: usernameInput, avatar: avatarInput };
+  const handleSaveProfile = async () => {
+    try {
+      const formData = new FormData();
+      if (avatarFile) {
+        formData.append("profile_pic", avatarFile);
       }
-      return u;
-    });
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
+      if (bannerFile) {
+        formData.append("banner_image", bannerFile);
+      }
+      formData.append("bio", bioInput);
 
-    // Synchronize avatar key inside other components
-    localStorage.setItem(`profileImage_${currentUser.email}`, avatarInput);
+      const res = await videoService.updateStudioProfile(formData);
+      setProfileImage(res.profile_pic || `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random&color=fff&bold=true`);
+      setBannerImage(res.banner_image || "");
+      setBio(res.bio || "No bio added yet. Tell the YelTube community about yourself!");
 
-    setShowModal(false);
-    alert("Profile updated successfully!");
+      // Update local storage
+      const updatedUser = {
+        ...currentUser,
+        profile_pic: res.profile_pic,
+        banner_image: res.banner_image,
+        bio: res.bio,
+      };
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+
+      setShowModal(false);
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error("Error saving profile:", err);
+      alert("Failed to update profile. Please try again.");
+    }
   };
 
   return (
