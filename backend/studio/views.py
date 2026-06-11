@@ -10,11 +10,19 @@ from videos.serializers import VideoSerializer
 from comments.models import Comment
 from .serializers import StudioProfileSerializer
 
+from rest_framework.pagination import PageNumberPagination
+
+class StudioVideoPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
 class StudioVideoListView(generics.ListAPIView):
     serializer_class = VideoSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter]
     search_fields = ["title", "description"]
+    pagination_class = StudioVideoPagination
 
     def get_queryset(self):
         return Video.objects.filter(user=self.request.user).order_by("-created_at")
