@@ -182,8 +182,8 @@
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.45);
-  color: white;
+  background: white;
+  color: black;
   font-size: 20px;
   display: flex;
   align-items: center;
@@ -195,7 +195,7 @@
 
 .shorts-page .action-btn:hover {
   transform: scale(1.15);
-  background: rgba(0, 0, 0, 0.65);
+  background: rgba(20, 20, 20, 0.65);
 }
 
 .shorts-page .action-btn.like.active {

@@ -56,7 +56,7 @@ const Home = ({
   filteredVideos.slice(0,8);
 
   const remainingVideos =
-  filteredVideos.slice(4);
+  filteredVideos.slice(8);
 
   return (
 

@@ -16,6 +16,7 @@ const Login = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showSignupConfirm, setShowSignupConfirm] = useState(false);
 
   // Forgot Password state
   const [forgotEmail, setForgotEmail] = useState("");
@@ -24,6 +25,7 @@ const Login = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   // Email format validator helper
   const isValidEmail = (email) => {
@@ -324,14 +326,17 @@ const Login = () => {
               </span>
             </div>
             
-            <div className="input-group">
+            <div className="input-group password-group">
               <input
-                type="password"
+                type={showSignupConfirm ? "text" : "password"}
                 placeholder="Confirm password"
                 value={signupConfirm}
                 onChange={(e) => setSignupConfirm(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSignup()}
               />
+              <span className="password-toggle" onClick={() => setShowSignupConfirm(!showSignupConfirm)}>
+                {showSignupConfirm ? <FaEyeSlash /> : <FaEye />}
+              </span>
             </div>
 
             <button className="submit-btn" onClick={handleSignup}>
@@ -411,14 +416,17 @@ const Login = () => {
                     {showNewPassword ? <FaEyeSlash /> : <FaEye />}
                   </span>
                 </div>
-                <div className="input-group">
+                <div className="input-group password-group">
                   <input
-                    type="password"
+                    type={showConfirmNewPassword ? "text" : "password"}
                     placeholder="Confirm new password"
                     value={confirmNewPassword}
                     onChange={(e) => setConfirmNewPassword(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
                   />
+                  <span className="password-toggle" onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}>
+                    {showConfirmNewPassword ? <FaEyeSlash /> : <FaEye />}
+                  </span>
                 </div>
                 <button className="submit-btn" onClick={handleResetPassword}>
                   Reset Password

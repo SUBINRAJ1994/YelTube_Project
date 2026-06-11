@@ -1,6 +1,6 @@
 .video-link{
   text-decoration: none;
-  color: rgba(0, 0, 0, 0.8);
+  color: var(--text-color);
 }
 
 .video-card{
@@ -28,7 +28,7 @@
 
 .video-info p,
 .video-info span{
-  color: #000000;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 .channel-logo{
