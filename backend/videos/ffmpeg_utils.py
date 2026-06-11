@@ -1,0 +1,89 @@
+import json
+import subprocess
+import os
+
+def extract_video_metadata(file_path):
+    """
+    Extracts metadata from a video file using ffprobe.
+    Returns a dictionary with duration, resolution, and file_size.
+    """
+    try:
+        cmd = [
+            "ffprobe",
+            "-v", "quiet",
+            "-print_format", "json",
+            "-show_streams",
+            "-show_format",
+            file_path
+        ]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        data = json.loads(result.stdout)
+        
+        # Get video stream
+        video_stream = next((stream for stream in data.get("streams", []) if stream.get("codec_type") == "video"), None)
+        
+        duration = float(data.get("format", {}).get("duration", 0))
+        file_size = int(data.get("format", {}).get("size", 0))
+        
+        width = int(video_stream.get("width", 0)) if video_stream else 0
+        height = int(video_stream.get("height", 0)) if video_stream else 0
+        
+        return {
+            "duration": duration,
+            "width": width,
+            "height": height,
+            "resolution": f"{width}x{height}" if width and height else None,
+            "file_size": file_size
+        }
+    except Exception as e:
+        print(f"Error extracting metadata from {file_path}: {e}")
+        return {
+            "duration": None,
+            "width": None,
+            "height": None,
+            "resolution": None,
+            "file_size": None
+        }
+
+def extract_thumbnail(video_path, output_path):
+    """
+    Extracts a thumbnail from a video at 1.0 seconds using ffmpeg.
+    """
+    try:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-ss", "00:00:01.00",
+            "-i", video_path,
+            "-vframes", "1",
+            "-q:v", "2",
+            output_path
+        ]
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return True
+    except Exception as e:
+        print(f"Error extracting thumbnail from {video_path}: {e}")
+        return False
+
+def transcode_video(video_path, output_path, target_height):
+    """
+    Transcodes a video to a target height resolution (e.g. 1080, 720, 480) using ffmpeg.
+    """
+    try:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i", video_path,
+            "-vf", f"scale=-2:{target_height}",
+            "-c:v", "libx264",
+            "-crf", "23",
+            "-preset", "medium",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            output_path
+        ]
+        subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        return True
+    except Exception as e:
+        print(f"Error transcoding {video_path} to {target_height}p: {e}")
+        return False
